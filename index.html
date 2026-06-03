@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統合シミュレーター｜サラダボウル</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#f8f6f1;--bg2:#fff;--bg3:#f2efe8;--bg4:#e8e3d8;
+  --ink:#1a1612;--ink2:#4a4440;--ink3:#8a7e78;--ink4:#c0b8b0;
+  --green:#1e7a48;--green-l:#52b788;--green-ll:#d4edda;--green-lll:#f0faf4;
+  --amber:#b85c00;--amber-l:#e88a30;--amber-ll:#fef0dc;--amber-lll:#fff9f0;
+  --blue:#1a5fa8;--blue-l:#4da6ff;--blue-ll:#e8f0fb;
+  --red:#b03030;--red-l:#e57373;--red-ll:#fdeaea;
+  --gold:#c9a84c;
+  --border:#e0d8ce;--border2:#ccc4b8;
+  --shadow:0 2px 10px rgba(26,22,18,0.07);
+  --shadow-lg:0 6px 24px rgba(26,22,18,0.12);
+}
+html,body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP','Syne',sans-serif;min-height:100vh;}
+
+/* ── HEADER ── */
+.header{background:var(--ink);padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:200;}
+.header-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#f7f4ee;}
+.header-sub{font-size:10px;color:rgba(247,244,238,0.4);letter-spacing:2px;text-transform:uppercase;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.target-wrap{display:flex;align-items:center;gap:6px;}
+.target-lbl{font-size:10px;color:rgba(247,244,238,0.5);letter-spacing:1px;white-space:nowrap;}
+.target-inp{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;width:48px;text-align:center;padding:4px;outline:none;}
+.target-inp:focus{border-color:rgba(255,255,255,0.5);}
+.goal-tag{font-size:11px;font-weight:700;color:var(--green-l);background:rgba(61,220,132,0.1);border:1px solid rgba(61,220,132,0.2);padding:5px 14px;border-radius:20px;white-space:nowrap;}
+
+/* ── TAB NAV ── */
+.tab-nav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;gap:0;position:sticky;top:49px;z-index:100;}
+.tab-btn{padding:12px 20px;font-size:12px;font-weight:600;font-family:'Noto Sans JP',sans-serif;border:none;background:transparent;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--ink);}
+.tab-btn:hover:not(.active){color:var(--ink2);background:var(--bg3);}
+
+/* ── VIEWS ── */
+.view{display:none;padding:20px;}
+.view.active{display:block;}
+
+/* ── TWO-COL ── */
+.two-col{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start;}
+.three-col{display:grid;grid-template-columns:300px 1fr 260px;gap:16px;align-items:start;}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);}
+.card-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+
+/* ── TYPE TABS ── */
+.type-tabs{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px;}
+.type-tab{flex:1;padding:8px;text-align:center;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--ink3);font-family:'Noto Sans JP',sans-serif;transition:all 0.2s;}
+.type-tab.af{background:var(--amber-ll);color:var(--amber);}
+.type-tab.am{background:var(--blue-ll);color:var(--blue);}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:10px;}
+.form-label{font-size:10px;color:var(--ink2);margin-bottom:4px;display:block;}
+.form-input{width:100%;background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;color:var(--ink);outline:none;font-family:'Noto Sans JP',sans-serif;}
+.form-input:focus{border-color:var(--amber-l);}
+.form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.form-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.hint-box{background:var(--green-lll);border:1px solid var(--green-ll);border-radius:8px;padding:9px 11px;margin-bottom:12px;font-size:10px;color:var(--green);line-height:1.6;}
+
+/* INGREDIENT */
+.ing-header-row{display:grid;grid-template-columns:1fr 64px 64px 56px 24px;gap:4px;margin-bottom:4px;}
+.ing-col-lbl{font-size:9px;color:var(--ink4);}
+.ing-rows{display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;margin-bottom:8px;}
+.ing-row{display:grid;grid-template-columns:1fr 64px 64px 56px 24px;gap:4px;align-items:center;}
+.ing-inp{background:#fff;border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:10px;color:var(--ink);outline:none;font-family:'Noto Sans JP',sans-serif;width:100%;}
+.ing-inp:focus{border-color:var(--amber-l);}
+.add-ing-btn{width:100%;font-size:10px;color:var(--amber);background:none;border:1px dashed var(--amber-l);border-radius:6px;padding:5px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;margin-bottom:10px;}
+.del-btn{width:22px;height:22px;border:1px solid var(--border);border-radius:4px;background:#fff;color:var(--ink3);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.del-btn:hover{background:var(--red-ll);color:var(--red);border-color:var(--red-l);}
+
+.add-btn{width:100%;padding:9px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+.add-btn:hover{background:#2a2520;}
+
+/* ── MENU LIST ── */
+.menu-list{display:flex;flex-direction:column;gap:8px;}
+.menu-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
+.mc-head{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;}
+.mc-head:hover{background:var(--bg3);}
+.mc-badge{font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:10px;flex-shrink:0;}
+.bf{background:var(--amber-ll);color:var(--amber);}
+.bm{background:var(--blue-ll);color:var(--blue);}
+.mc-name{flex:1;font-size:12px;font-weight:600;}
+.mc-price{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--green);flex-shrink:0;}
+.mc-status{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;flex-shrink:0;}
+.sok{background:var(--green-ll);color:var(--green);}
+.swarn{background:var(--amber-ll);color:var(--amber);}
+.sng{background:var(--red-ll);color:var(--red);}
+.mc-chev{font-size:10px;color:var(--ink4);transition:transform 0.2s;flex-shrink:0;}
+.mc-chev.open{transform:rotate(90deg);}
+.mc-body{display:none;padding:0 12px 12px;border-top:1px solid var(--border);}
+.mc-body.open{display:block;}
+
+/* DETAIL */
+.dt{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:10px;}
+.dt th{text-align:left;padding:4px;color:var(--ink3);font-size:9px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.dt td{padding:4px;color:var(--ink2);border-bottom:1px solid rgba(0,0,0,0.03);}
+.dt td:last-child{text-align:right;font-family:'Syne',sans-serif;font-weight:600;color:var(--ink);}
+.dt tr:last-child td{border-bottom:none;}
+
+.bn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0;}
+.bn-cell{background:var(--bg3);border-radius:6px;padding:8px;text-align:center;}
+.bn-lbl{font-size:8px;color:var(--ink3);margin-bottom:2px;}
+.bn-val{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;}
+.c-ok{color:var(--green);}.c-warn{color:var(--amber);}.c-ng{color:var(--red);}
+
+.cost-bar-bg{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;margin:6px 0;}
+.cost-bar-fill{height:100%;border-radius:3px;transition:width 0.3s;}
+
+.rev-box{background:var(--green-lll);border:1px solid var(--green-ll);border-radius:8px;padding:10px 12px;margin-top:8px;}
+.rev-box-title{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:6px;}
+.rev-row{display:flex;justify-content:space-between;font-size:10px;padding:2px 0;}
+.rev-key{color:var(--ink2);}
+.rev-val{font-family:'Syne',sans-serif;font-weight:700;color:var(--green);}
+
+.del-menu-btn{font-size:10px;color:var(--red);background:none;border:1px solid var(--red-l);border-radius:5px;padding:3px 10px;cursor:pointer;margin-top:8px;}
+
+.empty{text-align:center;padding:30px 20px;color:var(--ink4);font-size:12px;}
+
+/* ── CASHFLOW VIEW ── */
+.cf-section{margin-bottom:16px;}
+.cf-sec-title{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.cf-sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* LINKED ITEM */
+.linked-item{display:flex;align-items:center;justify-content:space-between;background:var(--green-lll);border:1px solid var(--green-ll);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:11px;}
+.li-left{display:flex;align-items:center;gap:6px;}
+.li-badge{font-size:8px;font-weight:700;padding:1px 6px;border-radius:8px;}
+.li-name{color:var(--ink2);}
+.li-right{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--green);}
+.li-sub{font-size:9px;color:var(--ink3);margin-top:1px;}
+
+/* SLIDER */
+.slider-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:11px 12px 9px;margin-bottom:8px;}
+.sl-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;gap:8px;}
+.sl-lbl{font-size:10px;color:var(--ink2);}
+.sl-inp-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.sl-unit{font-size:10px;color:var(--ink3);}
+.sl-num{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--ink);background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;width:64px;text-align:right;outline:none;-moz-appearance:textfield;}
+.sl-num::-webkit-inner-spin-button,.sl-num::-webkit-outer-spin-button{-webkit-appearance:none;}
+.sl-num:focus{border-color:var(--amber-l);}
+.sl-track{position:relative;padding-bottom:14px;}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;outline:none;cursor:pointer;background:var(--border);display:block;}
+input[type=range].sr::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--amber);box-shadow:0 0 5px rgba(184,92,0,0.4);cursor:pointer;}
+input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(90deg,var(--amber) var(--pct,0%),var(--border) var(--pct,0%));height:3px;border-radius:2px;}
+.ticks{display:flex;justify-content:space-between;margin-top:2px;}
+.tick{font-size:8px;color:var(--ink4);}
+
+/* RESULT CARDS */
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.res-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;position:relative;overflow:hidden;}
+.res-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.res-card.rc-amber::before{background:linear-gradient(90deg,var(--amber),transparent);}
+.res-card.rc-green::before{background:linear-gradient(90deg,var(--green),transparent);}
+.res-card.rc-red::before{background:linear-gradient(90deg,var(--red),transparent);}
+.rc-lbl{font-size:9px;color:var(--ink3);margin-bottom:3px;}
+.rc-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;line-height:1;}
+.rc-sub{font-size:9px;color:var(--ink3);margin-top:3px;}
+
+/* GOAL BAR */
+.goal-sec{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;}
+.goal-bar-bg{height:7px;background:var(--bg4);border-radius:4px;overflow:hidden;margin:4px 0;}
+.goal-bar-fill{height:100%;border-radius:4px;transition:width 0.4s cubic-bezier(0.4,0,0.2,1);}
+
+/* BREAKDOWN */
+.bk-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.04);font-size:10px;}
+.bk-row:last-child{border-bottom:none;}
+.bk-lbl{color:var(--ink2);}
+.bk-val{font-family:'Syne',sans-serif;font-weight:600;font-size:11px;}
+
+/* VERDICT */
+.verdict{background:linear-gradient(135deg,rgba(201,168,76,0.06),rgba(201,168,76,0.02));border:1px solid rgba(201,168,76,0.15);border-radius:8px;padding:11px 14px;font-size:10px;color:var(--ink2);line-height:1.7;margin-bottom:14px;}
+.verdict strong{color:var(--gold);}
+
+/* REV PANEL */
+.rev-panel-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:11px 12px;margin-bottom:8px;}
+.rp-q{font-size:9px;color:var(--ink3);margin-bottom:4px;}
+.rp-a{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;line-height:1.1;margin-bottom:2px;}
+.rp-n{font-size:9px;color:var(--ink3);}
+.rp-bar-bg{height:3px;background:rgba(0,0,0,0.08);border-radius:2px;margin-top:5px;overflow:hidden;}
+.rp-bar-fill{height:100%;border-radius:2px;background:var(--amber);transition:width 0.3s;}
+
+/* SUMMARY */
+.sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.sum-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:var(--shadow);}
+.sum-ttl{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;}
+.sum-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:2px;}
+.sum-sub{font-size:9px;color:var(--ink3);}
+.sum-bar-bg{height:3px;background:var(--bg4);border-radius:2px;margin-top:6px;overflow:hidden;}
+.sum-bar-fill{height:100%;border-radius:2px;}
+
+@media(max-width:768px){
+  .two-col,.three-col{grid-template-columns:1fr;}
+  .res-grid{grid-template-columns:1fr 1fr;}
+  .bn-grid{grid-template-columns:1fr 1fr;}
+  .sum-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">統合シミュレーター</div>
+    <div class="header-sub">原価管理 × 収支シミュレーション</div>
+  </div>
+  <div class="header-right">
+    <div class="target-wrap">
+      <span class="target-lbl">目標原価率</span>
+      <input class="target-inp" type="number" id="targetRate" min="10" max="60" value="30" oninput="onTargetChange()">
+      <span style="font-size:11px;color:rgba(247,244,238,0.5);">%</span>
+    </div>
+    <div class="goal-tag">TARGET｜合計純利 ¥150万／月</div>
+  </div>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('cost')">🥗 原価管理</button>
+  <button class="tab-btn" onclick="showTab('cashflow')">📊 収支シミュレーション</button>
+  <button class="tab-btn" onclick="showTab('summary')">📋 サマリー</button>
+</div>
+
+<!-- ══════════ COST VIEW ══════════ -->
+<div class="view active" id="view-cost">
+  <div class="two-col">
+
+    <!-- LEFT: REGISTER -->
+    <div>
+      <div class="card">
+        <div class="card-title">メニュー・商品登録</div>
+
+        <div class="type-tabs">
+          <button class="type-tab af" id="ttab-food" onclick="setType('food')">🥗 食材メニュー</button>
+          <button class="type-tab" id="ttab-merch" onclick="setType('merch')">📦 物販商品</button>
+        </div>
+
+        <!-- FOOD FORM -->
+        <div id="food-form">
+          <div class="hint-box">💡 食材をチェックして選ぶだけ。1人前原価を自動集計して<strong>推奨売価を計算</strong>します</div>
+          <div class="form-group">
+            <label class="form-label">メニュー名</label>
+            <input class="form-input" type="text" id="f-name" placeholder="例：スタンダードサラダボウル">
+          </div>
+
+          <!-- 食材選択 -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div class="form-label" style="margin-bottom:0;">食材を選択</div>
+            <button onclick="toggleMasterEdit()" style="font-size:10px;color:var(--blue);background:none;border:1px solid var(--blue-ll);border-radius:5px;padding:3px 8px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;" id="master-edit-btn">＋ 食材マスター編集</button>
+          </div>
+
+          <!-- 食材マスター編集パネル -->
+          <div id="master-edit-panel" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--ink3);margin-bottom:8px;">食材マスター編集</div>
+            <div style="display:grid;grid-template-columns:1fr 64px 60px 60px 24px;gap:4px;margin-bottom:4px;">
+              <div class="ing-col-lbl">食材名</div>
+              <div class="ing-col-lbl">購入量(g)</div>
+              <div class="ing-col-lbl">1人前(g)</div>
+              <div class="ing-col-lbl">単価(円)</div>
+              <div class="ing-col-lbl"></div>
+            </div>
+            <div id="master-list" style="display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto;margin-bottom:8px;"></div>
+            <button onclick="addMasterRow()" style="width:100%;font-size:10px;color:var(--amber);background:none;border:1px dashed var(--amber-l);border-radius:6px;padding:5px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">＋ 食材を追加</button>
+          </div>
+
+          <!-- チェックボックス一覧 -->
+          <div id="ing-check-list" style="display:flex;flex-direction:column;gap:2px;max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px;background:#fff;margin-bottom:10px;"></div>
+
+          <!-- 原価プレビュー -->
+          <div id="food-cost-preview" style="background:var(--green-lll);border:1px solid var(--green-ll);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--green);">1人前 原価プレビュー</span>
+              <span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--green);" id="preview-cost">¥0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:9px;color:var(--ink3);">原価率 <span id="preview-target">30</span>% の場合の推奨売価</span>
+              <span style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--amber);" id="preview-price">¥0</span>
+            </div>
+            <div id="preview-items" style="font-size:9px;color:var(--ink3);margin-top:6px;padding-top:6px;border-top:1px solid var(--green-ll);line-height:1.7;"></div>
+          </div>
+
+          <button class="add-btn" onclick="addFood()">メニューを登録</button>
+        </div>
+
+        <!-- MERCH FORM -->
+        <div id="merch-form" style="display:none;">
+          <div class="hint-box">💡 まとめ仕入れの数量・金額を入力すると<strong>1個あたりの推奨売価を自動計算</strong>します</div>
+          <div class="form-group">
+            <label class="form-label">商品名</label>
+            <input class="form-input" type="text" id="m-name" placeholder="例：プロテインバー（チョコ）">
+          </div>
+          <div class="form-grid2" style="margin-bottom:10px;">
+            <div class="form-group">
+              <label class="form-label">まとめ仕入れ数（個）</label>
+              <input class="form-input" type="number" id="m-bulk-qty" placeholder="例：30" min="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">まとめ仕入れ金額（円）</label>
+              <input class="form-input" type="number" id="m-bulk-price" placeholder="例：3600" min="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">月の販売予定数（個）</label>
+            <input class="form-input" type="number" id="m-monthly-qty" placeholder="例：60" min="0">
+          </div>
+          <!-- preview -->
+          <div id="merch-preview" style="display:none;background:var(--green-lll);border:1px solid var(--green-ll);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;line-height:1.8;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--green);margin-bottom:4px;">プレビュー</div>
+            <div id="mp-cost" style="color:var(--ink2);"></div>
+            <div id="mp-price" style="color:var(--green);font-weight:700;font-family:'Syne',sans-serif;font-size:14px;"></div>
+            <div id="mp-monthly" style="color:var(--ink3);font-size:10px;"></div>
+          </div>
+          <button class="add-btn" onclick="addMerch()">商品を登録</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: LIST -->
+    <div>
+      <div class="card">
+        <div class="card-title">
+          <span>登録済み一覧</span>
+          <span id="menu-count" style="font-size:10px;color:var(--ink3);font-weight:400;letter-spacing:0;">0品目</span>
+        </div>
+        <!-- 目標売価ラインバナー（収支シミュと連動） -->
+        <div id="target-price-banner" style="display:none;background:var(--amber-ll);border:1px solid var(--amber-l);border-radius:8px;padding:10px 14px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--amber);margin-bottom:2px;">📊 収支シミュから連動｜目標売価ライン</div>
+              <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--amber);" id="banner-price">—</div>
+              <div style="font-size:9px;color:var(--ink3);margin-top:2px;">純利¥150万達成に必要な客単価（原価率<span id="banner-rate">30</span>%時）</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:9px;color:var(--ink3);">各メニューの推奨売価がこれを</div>
+              <div style="font-size:11px;font-weight:700;color:var(--green);">◎ 上回る → 目標達成</div>
+              <div style="font-size:11px;font-weight:700;color:var(--red);">✕ 下回る → 値上げ or 客数増が必要</div>
+            </div>
+          </div>
+        </div>
+        <div id="alert-area"></div>
+        <div class="menu-list" id="menu-list">
+          <div class="empty">← 左からメニュー・商品を登録してください</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ CASHFLOW VIEW ══════════ -->
+<div class="view" id="view-cashflow">
+  <div class="three-col">
+
+    <!-- LEFT: PARAMS -->
+    <div>
+      <div class="card">
+        <div class="card-title">
+          <span>パラメーター</span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="saveCFParams()" id="cf-save-btn" style="font-size:10px;font-weight:600;padding:4px 12px;background:var(--ink);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:background 0.2s;">保存</button>
+            <button onclick="loadCFParams()" id="cf-load-btn" style="font-size:10px;font-weight:600;padding:4px 12px;background:none;color:var(--ink2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;" title="保存した設定を読み込む">読み込み</button>
+          </div>
+        </div>
+        <div id="cf-save-msg" style="display:none;font-size:10px;color:var(--green);margin-bottom:10px;padding:6px 10px;background:var(--green-lll);border:1px solid var(--green-ll);border-radius:6px;"></div>
+
+        <!-- LINKED ITEMS -->
+        <div class="cf-sec-title">登録メニューから自動連携</div>
+        <div id="linked-food-area">
+          <div style="font-size:10px;color:var(--ink4);padding:8px 0;">食材メニューが登録されると表示</div>
+        </div>
+        <div style="margin-bottom:4px;margin-top:8px;">
+          <div style="font-size:9px;color:var(--ink3);">📦 物販（自動連携）</div>
+        </div>
+        <div id="linked-merch-area">
+          <div style="font-size:10px;color:var(--ink4);padding:8px 0;">物販商品が登録されると表示</div>
+        </div>
+
+        <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+        <!-- MANUAL SLIDERS -->
+        <div class="cf-sec-title">手動調整</div>
+
+        <div class="slider-item">
+          <div class="sl-head">
+            <span class="sl-lbl">1日の客数</span>
+            <div class="sl-inp-wrap">
+              <input class="sl-num" type="number" id="n-cust-n" min="10" max="300" step="5" value="80" oninput="syncN('n-cust','n-cust-n');calcCF()">
+              <span class="sl-unit">人</span>
+            </div>
+          </div>
+          <div class="sl-track">
+            <input type="range" class="sr" id="n-cust" min="10" max="300" step="5" value="80" oninput="syncR('n-cust','n-cust-n');calcCF()">
+            <div class="ticks" id="tk-n-cust"></div>
+          </div>
+        </div>
+
+        <div class="slider-item">
+          <div class="sl-head">
+            <span class="sl-lbl">月の営業日数</span>
+            <div class="sl-inp-wrap">
+              <input class="sl-num" type="number" id="n-days-n" min="15" max="31" step="1" value="25" oninput="syncN('n-days','n-days-n');calcCF()">
+              <span class="sl-unit">日</span>
+            </div>
+          </div>
+          <div class="sl-track">
+            <input type="range" class="sr" id="n-days" min="15" max="31" step="1" value="25" oninput="syncR('n-days','n-days-n');calcCF()">
+            <div class="ticks" id="tk-n-days"></div>
+          </div>
+        </div>
+
+        <div class="slider-item">
+          <div class="sl-head">
+            <span class="sl-lbl">人件費（月）</span>
+            <div class="sl-inp-wrap">
+              <span class="sl-unit">¥</span>
+              <input class="sl-num" type="number" id="n-labor-n" min="0" max="200" step="5" value="60" oninput="syncN('n-labor','n-labor-n');calcCF()">
+              <span class="sl-unit">万</span>
+            </div>
+          </div>
+          <div class="sl-track">
+            <input type="range" class="sr" id="n-labor" min="0" max="200" step="5" value="60" oninput="syncR('n-labor','n-labor-n');calcCF()">
+            <div class="ticks" id="tk-n-labor"></div>
+          </div>
+        </div>
+
+        <div class="slider-item">
+          <div class="sl-head">
+            <span class="sl-lbl">家賃（月）</span>
+            <div class="sl-inp-wrap">
+              <span class="sl-unit">¥</span>
+              <input class="sl-num" type="number" id="n-rent-n" min="0" max="80" step="1" value="20" oninput="syncN('n-rent','n-rent-n');calcCF()">
+              <span class="sl-unit">万</span>
+            </div>
+          </div>
+          <div class="sl-track">
+            <input type="range" class="sr" id="n-rent" min="0" max="80" step="1" value="20" oninput="syncR('n-rent','n-rent-n');calcCF()">
+            <div class="ticks" id="tk-n-rent"></div>
+          </div>
+        </div>
+
+        <div class="slider-item">
+          <div class="sl-head">
+            <span class="sl-lbl">その他固定費（月）</span>
+            <div class="sl-inp-wrap">
+              <span class="sl-unit">¥</span>
+              <input class="sl-num" type="number" id="n-other-n" min="0" max="80" step="1" value="15" oninput="syncN('n-other','n-other-n');calcCF()">
+              <span class="sl-unit">万</span>
+            </div>
+          </div>
+          <div class="sl-track">
+            <input type="range" class="sr" id="n-other" min="0" max="80" step="1" value="15" oninput="syncR('n-other','n-other-n');calcCF()">
+            <div class="ticks" id="tk-n-other"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CENTER: RESULTS -->
+    <div>
+      <div class="card">
+        <div class="card-title">収支結果</div>
+
+        <div class="goal-sec">
+          <div style="font-size:9px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">🎯 目標達成率（合計純利 ¥150万）</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+            <span style="font-size:10px;color:var(--ink2);">現在の純利</span>
+            <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;" id="cf-pct-lbl">0%</span>
+          </div>
+          <div class="goal-bar-bg"><div class="goal-bar-fill" id="cf-bar" style="width:0%;background:linear-gradient(90deg,var(--amber),var(--green-l));"></div></div>
+          <div style="font-size:9px;text-align:right;margin-top:2px;" id="cf-gap-note"></div>
+        </div>
+
+        <div class="res-grid">
+          <div class="res-card rc-amber">
+            <div class="rc-lbl">月間売上（飲食）</div>
+            <div class="rc-val" id="cf-food-rev" style="color:var(--amber);">¥0</div>
+          </div>
+          <div class="res-card rc-green">
+            <div class="rc-lbl">月間売上（物販）</div>
+            <div class="rc-val" id="cf-merch-rev" style="color:var(--blue);">¥0</div>
+            <div class="rc-sub" id="cf-merch-sub"></div>
+          </div>
+          <div class="res-card rc-amber">
+            <div class="rc-lbl">月間総売上</div>
+            <div class="rc-val" id="cf-total-rev" style="color:var(--ink);">¥0</div>
+          </div>
+          <div class="res-card rc-green">
+            <div class="rc-lbl">月間純利</div>
+            <div class="rc-val" id="cf-profit">¥0</div>
+            <div class="rc-sub" id="cf-per-person"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:flex-end;gap:10px;font-size:9px;color:var(--ink4);margin-bottom:4px;"><span>金額</span></div>
+          <div class="bk-row"><span class="bk-lbl">飲食売上</span><span class="bk-val" id="bk-fr" style="color:var(--amber);">—</span></div>
+          <div class="bk-row"><span class="bk-lbl">物販売上</span><span class="bk-val" id="bk-mr" style="color:var(--blue);">—</span></div>
+          <div class="bk-row"><span class="bk-lbl">食材原価</span><span class="bk-val" id="bk-fc" style="color:var(--red);">—</span></div>
+          <div class="bk-row"><span class="bk-lbl">物販原価</span><span class="bk-val" id="bk-mc" style="color:var(--red);">—</span></div>
+          <div class="bk-row"><span class="bk-lbl">人件費</span><span class="bk-val" id="bk-lb" style="color:var(--red);">—</span></div>
+          <div class="bk-row"><span class="bk-lbl">家賃</span><span class="bk-val" id="bk-rt" style="color:var(--red);">—</span></div>
+          <div class="bk-row"><span class="bk-lbl">その他</span><span class="bk-val" id="bk-ot" style="color:var(--red);">—</span></div>
+          <div class="bk-row" style="border-top:1px solid var(--border);padding-top:6px;margin-top:2px;"><span class="bk-lbl" style="font-weight:700;color:var(--ink);">純利</span><span class="bk-val" id="bk-profit" style="font-size:14px;">—</span></div>
+        </div>
+
+        <div class="verdict" id="cf-verdict">パラメーターを設定すると分析が表示されます。</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: REVERSE CALC -->
+    <div>
+      <div class="card">
+        <div class="card-title">目標達成の逆算</div>
+        <div style="font-size:9px;color:var(--ink3);margin-bottom:12px;line-height:1.6;">純利¥150万に届かせるには？</div>
+
+        <div style="background:var(--amber-ll);border:1px solid var(--amber-l);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--amber);margin-bottom:6px;">📌 目標達成に必要な客単価</div>
+          <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--amber);line-height:1;" id="rp-price">—</div>
+          <div style="font-size:10px;color:var(--ink2);margin-top:4px;" id="rp-price-n"></div>
+          <div style="font-size:9px;color:var(--ink3);margin-top:4px;padding-top:4px;border-top:1px solid var(--amber-l);">この金額が原価管理タブの「目標売価ライン」と連動します</div>
+        </div>
+
+        <div class="rev-panel-card">
+          <div class="rp-q">1日の客数を何人にすれば届く？</div>
+          <div class="rp-a" id="rp-cust" style="color:var(--amber);">—</div>
+          <div class="rp-n" id="rp-cust-n"></div>
+          <div class="rp-bar-bg"><div class="rp-bar-fill" id="rp-cust-bar" style="width:0%;"></div></div>
+        </div>
+
+        <div class="rev-panel-card">
+          <div class="rp-q">物販売上を月いくら積めば届く？</div>
+          <div class="rp-a" id="rp-merch" style="color:var(--amber);">—</div>
+          <div class="rp-n" id="rp-merch-n"></div>
+          <div class="rp-bar-bg"><div class="rp-bar-fill" id="rp-merch-bar" style="width:0%;"></div></div>
+        </div>
+
+        <!-- MERCH CLEARANCE CHECK -->
+        <div style="height:1px;background:var(--border);margin:12px 0;"></div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;">物販 売値クリア確認</div>
+        <div id="merch-clearance-list">
+          <div style="font-size:10px;color:var(--ink4);">物販商品を登録すると表示</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ SUMMARY VIEW ══════════ -->
+<div class="view" id="view-summary">
+  <div class="sum-grid" id="sum-grid">
+    <div class="sum-card"><div class="sum-ttl">登録品目数</div><div class="sum-val" id="s-count">0</div><div class="sum-sub">品目</div></div>
+    <div class="sum-card"><div class="sum-ttl">平均原価率</div><div class="sum-val" id="s-avg">—</div><div class="sum-sub">全メニュー平均<div class="sum-bar-bg"><div class="sum-bar-fill" id="s-avg-bar" style="width:0%;background:var(--green-l);"></div></div></div></div>
+    <div class="sum-card"><div class="sum-ttl">目標超え品目</div><div class="sum-val" id="s-ng" style="color:var(--red);">0</div><div class="sum-sub">件</div></div>
+  </div>
+  <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;">原価率ランキング</div>
+  <div id="rank-list" style="display:flex;flex-direction:column;gap:6px;">
+    <div class="empty">メニュー・商品を登録するとランキングが表示されます</div>
+  </div>
+</div>
+
+<script>
+const TARGET_PROFIT = 1500000;
+let menus = JSON.parse(localStorage.getItem('unified_menus') || '[]');
+let openCards = {};
+let currentType = 'food';
+let globalNeedPrice = 0; // 収支シミュで逆算した必要客単価（原価管理タブと連携）
+
+// ── UTILS ──
+const fmtY = n => '¥' + Math.round(n).toLocaleString();
+const fmtM = n => '¥' + Math.round(n/10000) + '万';
+const fmtR = n => (Math.round(n*10)/10) + '%';
+const getTarget = () => parseFloat(document.getElementById('targetRate').value) || 30;
+// 推奨売価 = max(原価率逆算, 目標売価ライン) で10円単位切り上げ
+const calcPrice = cost => {
+  const t = getTarget();
+  const basedOnCost = t>0 ? Math.ceil(cost/(t/100)/10)*10 : 0;
+  return globalNeedPrice > 0 ? Math.max(basedOnCost, globalNeedPrice) : basedOnCost;
+};
+const v = id => parseFloat(document.getElementById(id).value) || 0;
+const getRate = m => m.price>0 ? m.cost/m.price*100 : 0;
+
+function statusInfo(rate, target){
+  const r = Math.round(rate*10)/10;
+  if(rate <= target*0.9) return {lbl:`✓ ${r}%`, cls:'sok'};
+  if(rate <= target)     return {lbl:`△ ${r}%`, cls:'swarn'};
+  return                        {lbl:`✕ ${r}%`, cls:'sng'};
+}
+
+function save(){ localStorage.setItem('unified_menus', JSON.stringify(menus)); }
+
+// ── TAB ──
+function showTab(t){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+t).classList.add('active');
+  event.target.classList.add('active');
+  if(t==='cashflow') calcCF();
+  if(t==='summary') renderSummary();
+}
+
+function setType(t){
+  currentType = t;
+  document.getElementById('food-form').style.display = t==='food'?'block':'none';
+  document.getElementById('merch-form').style.display = t==='merch'?'block':'none';
+  document.getElementById('ttab-food').className = 'type-tab'+(t==='food'?' af':'');
+  document.getElementById('ttab-merch').className = 'type-tab'+(t==='merch'?' am':'');
+}
+
+// ── ING ROW ──
+// ── 食材マスター ──
+let ingredientMaster = JSON.parse(localStorage.getItem('ing_master') || 'null') || [
+  {id:1, name:'レタス',       buyQty:400, useQty:40,  unitPrice:238},
+  {id:2, name:'サニーレタス', buyQty:160, useQty:40,  unitPrice:138},
+  {id:3, name:'さつまいも',   buyQty:250, useQty:30,  unitPrice:198},
+  {id:4, name:'にんじん',     buyQty:400, useQty:15,  unitPrice:68},
+  {id:5, name:'アボカド',     buyQty:120, useQty:30,  unitPrice:198},
+  {id:6, name:'かぼちゃ',     buyQty:380, useQty:30,  unitPrice:168},
+  {id:7, name:'ズッキーニ',   buyQty:90,  useQty:20,  unitPrice:198},
+  {id:8, name:'きゅうり',     buyQty:90,  useQty:15,  unitPrice:68},
+  {id:9, name:'プチトマト',   buyQty:230, useQty:35,  unitPrice:198},
+  {id:10,name:'オクラ',       buyQty:40,  useQty:15,  unitPrice:180},
+  {id:11,name:'豆苗',         buyQty:100, useQty:25,  unitPrice:118},
+  {id:12,name:'えび',         buyQty:200, useQty:40,  unitPrice:458},
+  {id:13,name:'鮭',           buyQty:200, useQty:67,  unitPrice:203},
+  {id:14,name:'ブロッコリー', buyQty:375, useQty:40,  unitPrice:198},
+  {id:15,name:'鶏胸肉',       buyQty:1000,useQty:50,  unitPrice:1570},
+  {id:16,name:'ゆで卵',       buyQty:10,  useQty:1,   unitPrice:315},
+  {id:17,name:'無塩ナッツ',   buyQty:70,  useQty:5,   unitPrice:360},
+];
+
+function saveMaster(){ localStorage.setItem('ing_master', JSON.stringify(ingredientMaster)); }
+function masterCostPer(m){ return m.buyQty>0 ? (m.unitPrice/m.buyQty)*m.useQty : 0; }
+function getMasterNextId(){ return Math.max(0,...ingredientMaster.map(m=>m.id))+1; }
+
+function renderMasterList(){
+  const list = document.getElementById('master-list');
+  if(!list) return;
+  list.innerHTML = ingredientMaster.map(m=>`
+    <div style="display:grid;grid-template-columns:1fr 64px 60px 60px 24px;gap:4px;align-items:center;" data-mid="${m.id}">
+      <input class="ing-inp" type="text" value="${m.name}" onchange="updateMaster(${m.id},'name',this.value)" style="font-size:10px;">
+      <input class="ing-inp" type="number" value="${m.buyQty}" onchange="updateMaster(${m.id},'buyQty',+this.value)" style="text-align:right;font-size:10px;">
+      <input class="ing-inp" type="number" value="${m.useQty}" onchange="updateMaster(${m.id},'useQty',+this.value)" style="text-align:right;font-size:10px;">
+      <input class="ing-inp" type="number" value="${m.unitPrice}" onchange="updateMaster(${m.id},'unitPrice',+this.value)" style="text-align:right;font-size:10px;">
+      <button class="del-btn" onclick="deleteMaster(${m.id})">×</button>
+    </div>`).join('');
+}
+
+function updateMaster(id, key, val){
+  const m = ingredientMaster.find(m=>m.id===id);
+  if(m){ m[key]=val; saveMaster(); renderCheckList(); }
+}
+
+function deleteMaster(id){
+  ingredientMaster = ingredientMaster.filter(m=>m.id!==id);
+  saveMaster(); renderMasterList(); renderCheckList();
+}
+
+function addMasterRow(){
+  ingredientMaster.push({id:getMasterNextId(), name:'新しい食材', buyQty:100, useQty:20, unitPrice:100});
+  saveMaster(); renderMasterList(); renderCheckList();
+}
+
+function toggleMasterEdit(){
+  const panel = document.getElementById('master-edit-panel');
+  const isOpen = panel.style.display==='block';
+  panel.style.display = isOpen?'none':'block';
+  document.getElementById('master-edit-btn').textContent = isOpen?'＋ 食材マスター編集':'✕ 閉じる';
+  if(!isOpen) renderMasterList();
+}
+
+function renderCheckList(){
+  const list = document.getElementById('ing-check-list');
+  if(!list || !ingredientMaster) return;
+  list.innerHTML = (ingredientMaster||[]).map(m=>{
+    const cost = masterCostPer(m);
+    return `
+    <label style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+      <input type="checkbox" class="ing-check" data-id="${m.id}" onchange="updateFoodPreview()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--green);">
+      <span style="flex:1;font-size:11px;color:var(--ink2);">${m.name}</span>
+      <span style="font-size:9px;color:var(--ink3);">${m.useQty}g</span>
+      <span style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--amber);min-width:40px;text-align:right;">${fmtY(cost)}</span>
+    </label>`;
+  }).join('');
+}
+
+function updateFoodPreview(){
+  const checked = [...document.querySelectorAll('.ing-check:checked')];
+  const prev = document.getElementById('food-cost-preview');
+  if(checked.length===0){ prev.style.display='none'; return; }
+
+  const selectedIds = checked.map(c=>+c.dataset.id);
+  const selected = ingredientMaster.filter(m=>selectedIds.includes(m.id));
+  const totalCost = selected.reduce((s,m)=>s+masterCostPer(m), 0);
+  const price = calcPrice(totalCost);
+
+  prev.style.display = 'block';
+  document.getElementById('preview-cost').textContent = fmtY(totalCost);
+  document.getElementById('preview-price').textContent = fmtY(price);
+  document.getElementById('preview-target').textContent = getTarget();
+  document.getElementById('preview-items').textContent =
+    selected.map(m=>`${m.name} ${m.useQty}g → ${fmtY(masterCostPer(m))}`).join(' ／ ');
+}
+
+function addIngRow(){} // 後方互換のため残す
+function updateIngPreview(){}
+
+// ── ADD FOOD ──
+function addFood(){
+  const name = document.getElementById('f-name').value.trim();
+  if(!name){ alert('メニュー名を入力してください'); return; }
+  const checked = [...document.querySelectorAll('.ing-check:checked')];
+  if(checked.length===0){ alert('食材を1つ以上選択してください'); return; }
+
+  const selectedIds = checked.map(c=>+c.dataset.id);
+  const selected = ingredientMaster.filter(m=>selectedIds.includes(m.id));
+  const ings = selected.map(m=>({
+    name: m.name,
+    buyPrice: m.unitPrice,
+    buyQty: m.buyQty,
+    useQty: m.useQty,
+    cost: masterCostPer(m)
+  }));
+  const cost = ings.reduce((s,i)=>s+i.cost, 0);
+  const price = calcPrice(cost);
+  menus.push({id:Date.now(), type:'food', name, price, cost, ingredients:ings});
+
+  // リセット
+  document.getElementById('f-name').value='';
+  document.querySelectorAll('.ing-check:checked').forEach(c=>c.checked=false);
+  document.getElementById('food-cost-preview').style.display='none';
+  save(); renderAll();
+}
+
+// ── ADD MERCH ──
+function addMerch(){
+  const name = document.getElementById('m-name').value.trim();
+  const bq = v('m-bulk-qty'), bp = v('m-bulk-price'), mq = v('m-monthly-qty');
+  if(!name||!bq||!bp){ alert('商品名・仕入れ数・仕入れ金額を入力してください'); return; }
+  const costPer = bp/bq;
+  const price = calcPrice(costPer);
+  menus.push({id:Date.now(), type:'merch', name, price, cost:costPer, bulkQty:bq, bulkPrice:bp, monthlyQty:mq});
+  document.getElementById('m-name').value='';
+  document.getElementById('m-bulk-qty').value='';
+  document.getElementById('m-bulk-price').value='';
+  document.getElementById('m-monthly-qty').value='';
+  document.getElementById('merch-preview').style.display='none';
+  save(); renderAll();
+}
+
+function delMenu(id){ menus=menus.filter(m=>m.id!==id); save(); renderAll(); }
+
+// ── TARGET CHANGE → recalc all prices ──
+function onTargetChange(){
+  const t = getTarget();
+  menus = menus.map(m => ({...m, price: t>0 ? Math.ceil(m.cost/(t/100)/10)*10 : 0}));
+  save(); renderAll();
+}
+
+// ── RENDER ALL ──
+function renderAll(){
+  try {
+    renderCostList();
+    calcCF();
+    renderSummary();
+  } catch(e) {
+    console.error('renderAll error:', e.message, e.stack);
+  }
+}
+
+// ── RENDER COST LIST ──
+function renderCostList(){
+  const target = getTarget();
+  const container = document.getElementById('menu-list');
+  const alertArea = document.getElementById('alert-area');
+  document.getElementById('menu-count').textContent = menus.length + '品目';
+
+  // 目標売価ラインバナー更新
+  const banner = document.getElementById('target-price-banner');
+  if(globalNeedPrice > 0){
+    banner.style.display = 'block';
+    document.getElementById('banner-price').textContent = fmtY(globalNeedPrice);
+    document.getElementById('banner-rate').textContent = target;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  if(menus.length===0){
+    container.innerHTML='<div class="empty">← 左からメニュー・商品を登録してください</div>';
+    alertArea.innerHTML='';
+    return;
+  }
+
+  const ng = menus.filter(m=>getRate(m)>target);
+  alertArea.innerHTML = ng.length>0
+    ? `<div style="background:var(--red-ll);border:1px solid var(--red-l);border-radius:8px;padding:9px 12px;font-size:10px;color:var(--red);margin-bottom:10px;">⚠️ <strong>${ng.map(m=>m.name).join('・')}</strong> が目標原価率 ${target}% を超えています</div>`
+    : '';
+
+  container.innerHTML = menus.map(m=>{
+    const isOpen = openCards[m.id];
+
+    let bodyHtml = '';
+    if(m.type==='food'){
+      const rows = (m.ingredients||[]).map(i=>`
+        <tr><td>${i.name}</td><td>${fmtY(i.buyPrice)}/${i.buyQty}g</td><td>${i.useQty}g</td><td>${fmtY(i.cost)}</td></tr>`).join('');
+      bodyHtml = `<table class="dt">
+        <thead><tr><th>食材</th><th>仕入れ</th><th>使用量</th><th>1皿原価</th></tr></thead>
+        <tbody>${rows}</tbody></table>`;
+    } else {
+      bodyHtml = `<table class="dt">
+        <thead><tr><th>項目</th><th>金額</th></tr></thead>
+        <tbody>
+          <tr><td>まとめ仕入れ</td><td>${m.bulkQty}個 / ${fmtY(m.bulkPrice)}</td></tr>
+          <tr><td>1個あたり原価</td><td>${fmtY(m.cost)}</td></tr>
+          <tr><td>月の販売予定数</td><td>${(m.monthlyQty||0)}個</td></tr>
+          <tr><td>月の仕入れ総額</td><td>${fmtY(m.cost*(m.monthlyQty||0))}</td></tr>
+          <tr><td>月の売上（推奨売価×販売数）</td><td style="color:var(--green);">${fmtY(m.price*(m.monthlyQty||0))}</td></tr>
+        </tbody></table>`;
+    }
+
+    // 売価の内訳計算（barPctはここで定義）
+    const basedOnCost = getTarget()>0 ? Math.ceil(m.cost/(getTarget()/100)/10)*10 : 0;
+    const isRaisedToTarget = globalNeedPrice > 0 && basedOnCost < globalNeedPrice;
+    const effectivePrice = isRaisedToTarget ? globalNeedPrice : basedOnCost;
+    const targetMaxCost = effectivePrice * (getTarget()/100);
+    const costPlus = targetMaxCost - m.cost;
+    const barPct = Math.min(effectivePrice>0 ? m.cost/effectivePrice*100/target*100 : 0, 100);
+
+    // 実効原価率（引き上げ後の売価で計算）
+    const effectiveRate = effectivePrice > 0 ? m.cost/effectivePrice*100 : 0;
+    const si = statusInfo(effectiveRate, target);
+    const barCol = si.cls==='sok'?'var(--green-l)':si.cls==='swarn'?'var(--amber-l)':'var(--red-l)';
+    const priceClearBadge = (m.type==='food' && globalNeedPrice > 0)
+      ? `<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0;background:var(--green-ll);color:var(--green);">◎ 目標クリア</span>`
+      : '';
+
+    // 売価ラベル
+    const priceLabel = isRaisedToTarget
+      ? `<span class="mc-price" style="color:var(--green);">目標売価 ${fmtY(effectivePrice)}</span>`
+      : `<span class="mc-price">推奨 ${fmtY(effectivePrice)}</span>`;
+
+    return `<div class="menu-card">
+      <div class="mc-head" onclick="toggleCard(${m.id})">
+        <span class="mc-badge ${m.type==='food'?'bf':'bm'}">${m.type==='food'?'食材':'物販'}</span>
+        <span class="mc-name">${m.name}</span>
+        ${priceLabel}
+        ${priceClearBadge}
+        <span class="mc-status ${si.cls}">${si.lbl}</span>
+        <span class="mc-chev ${isOpen?'open':''}">▶</span>
+      </div>
+      <div class="mc-body ${isOpen?'open':''}">
+        ${bodyHtml}
+        ${m.type==='food' && globalNeedPrice > 0 ? `
+        <div style="background:var(--green-lll);border:1px solid var(--green-ll);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--green);margin-bottom:8px;">📊 目標売価ライン対比</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;margin-bottom:8px;">
+            <div style="background:#fff;border-radius:6px;padding:7px 4px;">
+              <div style="font-size:8px;color:var(--ink3);margin-bottom:2px;">原価ベース推奨売価</div>
+              <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:var(--ink2);">${fmtY(basedOnCost)}</div>
+            </div>
+            <div style="background:#fff;border-radius:6px;padding:7px 4px;">
+              <div style="font-size:8px;color:var(--ink3);margin-bottom:2px;">目標売価ライン</div>
+              <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:var(--amber);">${fmtY(globalNeedPrice)}</div>
+            </div>
+            <div style="background:var(--green-ll);border-radius:6px;padding:7px 4px;">
+              <div style="font-size:8px;color:var(--green);margin-bottom:2px;">${isRaisedToTarget?'↑ 引き上げ後':'設定売価'}</div>
+              <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--green);">${fmtY(effectivePrice)}</div>
+            </div>
+            <div style="background:var(--green-ll);border-radius:6px;padding:7px 4px;">
+              <div style="font-size:8px;color:var(--green);margin-bottom:2px;">原価目標より</div>
+              <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--green);">＋${fmtY(costPlus)}</div>
+            </div>
+          </div>
+          <div style="font-size:9px;color:var(--ink2);padding:6px 8px;background:#fff;border-radius:6px;line-height:1.6;">
+            ${isRaisedToTarget
+              ? `◎ 原価率ベースの推奨売価（${fmtY(basedOnCost)}）より目標売価ライン（${fmtY(globalNeedPrice)}）の方が高いため、<strong>売価を${fmtY(globalNeedPrice)}に自動引き上げ</strong>。原価率は ${fmtR(m.cost/effectivePrice*100)} になり、目標 ${target}% より有利。原価目標（${fmtY(targetMaxCost)}）に対して <strong style="color:var(--green);">＋${fmtY(costPlus)} の余裕</strong>があります。`
+              : `◎ 推奨売価（${fmtY(effectivePrice)}）が目標売価ライン（${fmtY(globalNeedPrice)}）を ${fmtY(effectivePrice-globalNeedPrice)} 上回っています。原価目標（${fmtY(targetMaxCost)}）に対して <strong style="color:var(--green);">＋${fmtY(costPlus)} の余裕</strong>があります。`}
+          </div>
+        </div>` : ''}
+        <div class="bn-grid">
+          <div class="bn-cell"><div class="bn-lbl">原価</div><div class="bn-val">${fmtY(m.cost)}</div></div>
+          <div class="bn-cell" style="background:var(--green-lll);">
+            <div class="bn-lbl">${isRaisedToTarget?'目標売価（引上）':'推奨売価'}</div>
+            <div class="bn-val c-ok">${fmtY(effectivePrice)}</div>
+          </div>
+          <div class="bn-cell"><div class="bn-lbl">粗利</div><div class="bn-val c-ok">${fmtY(effectivePrice-m.cost)}</div></div>
+          <div class="bn-cell"><div class="bn-lbl">実効原価率</div><div class="bn-val c-ok">${fmtR(m.cost/effectivePrice*100)}</div></div>
+        </div>
+        <div class="cost-bar-bg"><div class="cost-bar-fill" style="width:${barPct}%;background:${barCol};"></div></div>
+        <div class="rev-box">
+          <div class="rev-box-title">🔁 原価率別 推奨売価</div>
+          ${[25,30,35,40].map(r=>`<div class="rev-row"><span class="rev-key">原価率 ${r}%</span><span class="rev-val">${fmtY(Math.ceil(m.cost/(r/100)/10)*10)}</span></div>`).join('')}
+          <div class="rev-row" style="margin-top:4px;padding-top:4px;border-top:1px solid var(--green-ll);"><span class="rev-key">現在の目標 ${target}%</span><span class="rev-val" style="font-size:16px;">${fmtY(m.price)}</span></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <button class="del-menu-btn" onclick="editMenu(${m.id})">✏️ 変更</button>
+          <button class="del-menu-btn" onclick="delMenu(${m.id})">削除</button>
+        </div>
+
+        <!-- 編集パネル（開いてる時だけ表示） -->
+        <div id="edit-panel-${m.id}" style="display:none;margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--ink3);margin-bottom:10px;">✏️ メニューを変更</div>
+
+          <div style="margin-bottom:8px;">
+            <div class="form-label">メニュー名</div>
+            <input class="form-input" type="text" id="edit-name-${m.id}" value="${m.name}" style="font-size:12px;">
+          </div>
+
+          ${m.type==='food' ? `
+          <div style="margin-bottom:8px;">
+            <div class="form-label" style="margin-bottom:6px;">食材を選択（チェックで変更）</div>
+            <div style="display:flex;flex-direction:column;gap:2px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px;background:#fff;">
+              ${(ingredientMaster||[]).map(ing=>{
+                const checked = (m.ingredients||[]).some(i=>i.name===ing.name);
+                const cost = masterCostPer(ing);
+                return `<label style="display:flex;align-items:center;gap:8px;padding:4px 5px;border-radius:5px;cursor:pointer;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+                  <input type="checkbox" class="edit-ing-check-${m.id}" data-id="${ing.id}" ${checked?'checked':''} onchange="updateEditPreview(${m.id})" style="width:13px;height:13px;cursor:pointer;accent-color:var(--green);">
+                  <span style="flex:1;font-size:11px;color:var(--ink2);">${ing.name}</span>
+                  <span style="font-size:9px;color:var(--ink3);">${ing.useQty}g</span>
+                  <span style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--amber);">${fmtY(cost)}</span>
+                </label>`;
+              }).join('')}
+            </div>
+          </div>
+          <div id="edit-preview-${m.id}" style="background:var(--green-lll);border:1px solid var(--green-ll);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:10px;color:var(--green);">
+            1人前原価: ${fmtY(m.cost)} → 推奨売価: ${fmtY(m.price)}
+          </div>` : `
+          <div style="margin-bottom:8px;">
+            <div class="form-label">仕入れ価格（円）</div>
+            <input class="form-input" type="number" id="edit-cost-${m.id}" value="${(m.bulkPrice||m.cost*m.bulkQty||0)}" oninput="updateEditMerchPreview(${m.id})" style="font-size:12px;">
+          </div>
+          <div style="margin-bottom:10px;">
+            <div class="form-label">まとめ仕入れ数（個）</div>
+            <input class="form-input" type="number" id="edit-bulkqty-${m.id}" value="${m.bulkQty||1}" oninput="updateEditMerchPreview(${m.id})" style="font-size:12px;">
+          </div>
+          <div style="margin-bottom:10px;">
+            <div class="form-label">月の販売予定数（個）</div>
+            <input class="form-input" type="number" id="edit-monthly-${m.id}" value="${m.monthlyQty||0}" style="font-size:12px;">
+          </div>
+          <div id="edit-preview-${m.id}" style="background:var(--green-lll);border:1px solid var(--green-ll);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:10px;color:var(--green);">
+            1個原価: ${fmtY(m.cost)} → 推奨売価: ${fmtY(m.price)}
+          </div>`}
+
+          <div style="display:flex;gap:8px;">
+            <button onclick="saveEdit(${m.id})" style="flex:1;padding:8px;background:var(--green);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">保存</button>
+            <button onclick="cancelEdit(${m.id})" style="padding:8px 14px;background:none;border:1px solid var(--border);border-radius:7px;font-size:11px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">キャンセル</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(id){ openCards[id]=!openCards[id]; renderCostList(); }
+
+function editMenu(id){
+  const panel = document.getElementById(`edit-panel-${id}`);
+  if(!panel) return;
+  const isOpen = panel.style.display==='block';
+  panel.style.display = isOpen?'none':'block';
+}
+
+function cancelEdit(id){
+  const panel = document.getElementById(`edit-panel-${id}`);
+  if(panel) panel.style.display='none';
+}
+
+function updateEditPreview(id){
+  const m = menus.find(m=>m.id===id);
+  if(!m) return;
+  const checked = [...document.querySelectorAll(`.edit-ing-check-${id}:checked`)];
+  const selectedIds = checked.map(c=>+c.dataset.id);
+  const selected = ingredientMaster.filter(ing=>selectedIds.includes(ing.id));
+  const cost = selected.reduce((s,ing)=>s+masterCostPer(ing), 0);
+  const price = calcPrice(cost);
+  const prev = document.getElementById(`edit-preview-${id}`);
+  if(prev) prev.textContent = `1人前原価: ${fmtY(cost)} → 推奨売価: ${fmtY(price)}`;
+}
+
+function updateEditMerchPreview(id){
+  const bp = parseFloat(document.getElementById(`edit-cost-${id}`)?.value)||0;
+  const bq = parseFloat(document.getElementById(`edit-bulkqty-${id}`)?.value)||1;
+  const costPer = bq>0 ? bp/bq : 0;
+  const price = calcPrice(costPer);
+  const prev = document.getElementById(`edit-preview-${id}`);
+  if(prev) prev.textContent = `1個原価: ${fmtY(costPer)} → 推奨売価: ${fmtY(price)}`;
+}
+
+function saveEdit(id){
+  const m = menus.find(m=>m.id===id);
+  if(!m) return;
+
+  const nameEl = document.getElementById(`edit-name-${id}`);
+  if(nameEl) m.name = nameEl.value.trim() || m.name;
+
+  if(m.type==='food'){
+    const checked = [...document.querySelectorAll(`.edit-ing-check-${id}:checked`)];
+    const selectedIds = checked.map(c=>+c.dataset.id);
+    const selected = ingredientMaster.filter(ing=>selectedIds.includes(ing.id));
+    if(selected.length>0){
+      m.ingredients = selected.map(ing=>({
+        name:ing.name, buyPrice:ing.unitPrice, buyQty:ing.buyQty, useQty:ing.useQty, cost:masterCostPer(ing)
+      }));
+      m.cost = m.ingredients.reduce((s,i)=>s+i.cost, 0);
+      m.price = calcPrice(m.cost);
+    }
+  } else {
+    const bp = parseFloat(document.getElementById(`edit-cost-${id}`)?.value)||0;
+    const bq = parseFloat(document.getElementById(`edit-bulkqty-${id}`)?.value)||1;
+    const mq = parseFloat(document.getElementById(`edit-monthly-${id}`)?.value)||0;
+    m.bulkPrice = bp; m.bulkQty = bq; m.monthlyQty = mq;
+    m.cost = bq>0 ? bp/bq : m.cost;
+    m.price = calcPrice(m.cost);
+  }
+
+  save(); renderAll();
+}
+
+// ── CASHFLOW CALC ──
+function calcCF(){
+  const target = getTarget();
+  const cust  = v('n-cust'), days = v('n-days');
+  const labor = v('n-labor')*10000, rent = v('n-rent')*10000, other = v('n-other')*10000;
+
+  const foods = menus.filter(m=>m.type==='food');
+  const merchs = menus.filter(m=>m.type==='merch');
+
+  const merchRev  = merchs.reduce((s,m)=>s+m.price*(m.monthlyQty||0), 0);
+  const merchCost = merchs.reduce((s,m)=>s+m.cost*(m.monthlyQty||0), 0);
+  const fixedCost = labor + rent + other;
+  const merchProfit = merchRev - merchCost;
+
+  // ── PASS 1: globalNeedPriceを先に確定 ──
+  // 原価ベースの推奨売価のみで仮avgCostRateを計算
+  const getBasedOnCost = m => getTarget()>0 ? Math.ceil(m.cost/(getTarget()/100)/10)*10 : 0;
+  const pass1AvgPrice = foods.length>0 ? foods.reduce((s,m)=>s+getBasedOnCost(m),0)/foods.length : 0;
+  const pass1CostRate = foods.length>0 ? foods.reduce((s,m)=>s+(m.cost/(getBasedOnCost(m)||1)),0)/foods.length : target/100;
+  const pass1NeedPrice = cust*days*(1-pass1CostRate) > 0
+    ? Math.ceil((TARGET_PROFIT - merchProfit + fixedCost) / (cust*days*(1-pass1CostRate)) / 10) * 10
+    : 0;
+  // globalNeedPriceを更新
+  globalNeedPrice = pass1NeedPrice;
+
+  // ── PASS 2: globalNeedPrice確定後に実効売価で再計算 ──
+  const getEffectivePrice = m => {
+    const basedOnCost = getBasedOnCost(m);
+    return globalNeedPrice > 0 && basedOnCost < globalNeedPrice ? globalNeedPrice : basedOnCost;
+  };
+  const avgPrice = foods.length>0 ? foods.reduce((s,m)=>s+getEffectivePrice(m),0)/foods.length : 0;
+  const avgCostRate = foods.length>0 ? foods.reduce((s,m)=>s+(m.cost/(getEffectivePrice(m)||1)),0)/foods.length : target/100;
+
+  const effectiveUnitPrice = foods.length>0 ? avgPrice : 0;
+  const foodRev  = effectiveUnitPrice * cust * days;
+  const foodCost = foodRev * avgCostRate;
+
+  const totalRev = foodRev + merchRev;
+  const totalCost = foodCost + merchCost + labor + rent + other;
+  const profit = totalRev - totalCost;
+  const pct = Math.round(profit/TARGET_PROFIT*100);
+  const gap = TARGET_PROFIT - profit;
+
+  // 最低必要売価（PASS2ベースで再計算）
+  const minPriceNeeded = cust*days*(1-avgCostRate) > 0
+    ? Math.ceil((TARGET_PROFIT - merchProfit + fixedCost) / (cust*days*(1-avgCostRate)) / 10) * 10
+    : 0;
+
+  // goal bar
+  document.getElementById('cf-pct-lbl').textContent = pct+'%';
+  document.getElementById('cf-bar').style.width = Math.min(Math.max(pct,0),100)+'%';
+  const gNote = document.getElementById('cf-gap-note');
+  gNote.textContent = gap>0 ? '目標まであと '+fmtM(gap) : '✓ 目標達成！ ＋'+fmtM(-gap);
+  gNote.style.color = gap>0?'var(--ink3)':'var(--green)';
+
+  // result cards
+  document.getElementById('cf-food-rev').textContent = fmtM(foodRev);
+  document.getElementById('cf-merch-rev').textContent = fmtM(merchRev);
+  document.getElementById('cf-merch-sub').textContent = merchs.length>0 ? merchs.length+'品目の合計' : '物販未登録';
+  document.getElementById('cf-total-rev').textContent = fmtM(totalRev);
+  const profEl = document.getElementById('cf-profit');
+  profEl.textContent = fmtM(profit);
+  profEl.className = 'rc-val '+(profit>=TARGET_PROFIT?'c-ok':profit>=0?'':'c-ng');
+  document.getElementById('cf-per-person').textContent = '1人あたり '+fmtM(profit/3);
+
+  // breakdown
+  document.getElementById('bk-fr').textContent = fmtM(foodRev);
+  document.getElementById('bk-mr').textContent = fmtM(merchRev);
+  document.getElementById('bk-fc').textContent = '−'+fmtM(foodCost);
+  document.getElementById('bk-mc').textContent = '−'+fmtM(merchCost);
+  document.getElementById('bk-lb').textContent = '−'+fmtM(labor);
+  document.getElementById('bk-rt').textContent = '−'+fmtM(rent);
+  document.getElementById('bk-ot').textContent = '−'+fmtM(other);
+  const bkp = document.getElementById('bk-profit');
+  bkp.textContent = fmtM(profit);
+  bkp.style.color = profit>=TARGET_PROFIT?'var(--green)':profit>=0?'var(--amber)':'var(--red)';
+
+  // verdict
+  let msg='';
+  if(profit>=TARGET_PROFIT) msg=`<strong>目標達成！</strong> 現在の設定で純利${fmtM(profit)}。物販をさらに伸ばすと安定します。`;
+  else if(profit>=0) msg=`あと${fmtM(gap)}で目標達成。右の逆算パネルを参考に調整してください。`;
+  else msg=`コストが売上を上回っています。人件費・家賃・原価率の見直しを先に行いましょう。`;
+  document.getElementById('cf-verdict').innerHTML=msg;
+
+  // linked items display
+  const foodArea = document.getElementById('linked-food-area');
+  if(foods.length>0){
+    // 各メニューの実効売価（引き上げ後）を計算
+    const foodsWithEffective = foods.map(m=>{
+      const basedOnCost = getTarget()>0 ? Math.ceil(m.cost/(getTarget()/100)/10)*10 : 0;
+      const ep = globalNeedPrice > 0 && basedOnCost < globalNeedPrice ? globalNeedPrice : basedOnCost;
+      const isAbove = minPriceNeeded===0 || ep >= minPriceNeeded;
+      const isRaised = globalNeedPrice > 0 && basedOnCost < globalNeedPrice;
+      return {...m, effectivePrice: ep, isAbove, isRaised, basedOnCost};
+    });
+    const belowMin = foodsWithEffective.filter(m=>!m.isAbove);
+    foodArea.innerHTML = foodsWithEffective.map(m=>`
+      <div class="linked-item" style="background:${m.isAbove?'var(--green-lll)':'var(--red-ll)'};border-color:${m.isAbove?'var(--green-ll)':'var(--red-l)'};">
+        <div class="li-left">
+          <span class="li-badge bf">食材</span>
+          <div>
+            <div class="li-name">${m.name}</div>
+            <div class="li-sub">
+              ${m.isRaised
+                ? `原価ベース¥${m.basedOnCost.toLocaleString()} → 目標売価に引上 / 原価率 ${fmtR(m.cost/m.effectivePrice*100)}`
+                : `推奨売価 ${fmtY(m.effectivePrice)} / 原価率 ${fmtR(m.cost/m.effectivePrice*100)}`}
+            </div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:${m.isAbove?'var(--green)':'var(--red)'};">${fmtY(m.effectivePrice)}</div>
+          <div style="font-size:9px;color:${m.isAbove?'var(--green)':'var(--red)'};">${m.isAbove?'✓ クリア':'✕ 不足'}</div>
+        </div>
+      </div>`).join('') +
+    // 平均・最低必要売価サマリー
+    `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:6px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="text-align:center;padding:6px;background:#fff;border-radius:6px;">
+          <div style="font-size:8px;color:var(--ink3);margin-bottom:2px;">登録メニュー平均売価</div>
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--amber);">${fmtY(avgPrice)}</div>
+          <div style="font-size:8px;color:var(--ink3);margin-top:1px;">収支計算に使用中</div>
+        </div>
+        <div style="text-align:center;padding:6px;background:${effectiveUnitPrice>=minPriceNeeded?'var(--green-lll)':'var(--red-ll)'};border-radius:6px;border:1px solid ${effectiveUnitPrice>=minPriceNeeded?'var(--green-ll)':'var(--red-l)'};">
+          <div style="font-size:8px;color:${effectiveUnitPrice>=minPriceNeeded?'var(--green)':'var(--red)'};margin-bottom:2px;">純利目標達成の最低売価</div>
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:${effectiveUnitPrice>=minPriceNeeded?'var(--green)':'var(--red)'};">${minPriceNeeded>0?fmtY(minPriceNeeded):'—'}</div>
+          <div style="font-size:8px;color:${effectiveUnitPrice>=minPriceNeeded?'var(--green)':'var(--red)'};margin-top:1px;">${effectiveUnitPrice>=minPriceNeeded?'✓ 平均売価がクリア':'✕ 平均売価が下回っている'}</div>
+        </div>
+      </div>
+      ${belowMin.length>0 ? `<div style="font-size:9px;color:var(--red);margin-top:8px;padding-top:6px;border-top:1px solid var(--red-l);">⚠️ <strong>${belowMin.map(m=>m.name).join('・')}</strong> の売価が最低ラインを下回っています</div>` : ''}
+    </div>
+    <div style="font-size:9px;color:var(--ink3);padding:4px 0 4px;">${fmtY(avgPrice)}（平均）× ${cust}人 × ${days}日 = ${fmtM(foodRev)}</div>`;
+  } else {
+    foodArea.innerHTML='<div style="font-size:10px;color:var(--ink4);padding:8px 0;">食材メニューを登録すると自動反映</div>';
+  }
+
+  const merchArea = document.getElementById('linked-merch-area');
+  if(merchs.length>0){
+    merchArea.innerHTML = merchs.map(m=>`
+      <div class="linked-item">
+        <div class="li-left">
+          <span class="li-badge bm">物販</span>
+          <div><div class="li-name">${m.name}</div><div class="li-sub">${fmtY(m.price)} × ${m.monthlyQty||0}個/月</div></div>
+        </div>
+        <div class="li-right">${fmtM(m.price*(m.monthlyQty||0))}</div>
+      </div>`).join('');
+  } else {
+    merchArea.innerHTML='<div style="font-size:10px;color:var(--ink4);padding:8px 0;">物販商品を登録すると自動反映</div>';
+  }
+
+  // REVERSE CALC
+  const totalFixedCost = labor+rent+other+foodCost+merchCost;
+  // ① 必要客単価
+  const needPrice = cust*days>0 ? (TARGET_PROFIT - merchRev + totalFixedCost - foodCost + foodRev*avgCostRate) / (cust*days*(1-avgCostRate)) : 0;
+  // simpler: (TARGET - nonFood) / (cust*days*(1-avgCostRate))
+  const nonFoodProfit = merchRev - merchCost - labor - rent - other;
+  const needFoodProfit = TARGET_PROFIT - nonFoodProfit;
+  // グローバルはPASS1で確定済み。ここでは逆算表示用の値を使う
+  const needPriceVal = cust*days*(1-avgCostRate)>0 ? needFoodProfit/(cust*days*(1-avgCostRate)) : 0;
+  // globalNeedPriceはPASS1で設定済みなので上書きしない
+  const okP = avgPrice >= globalNeedPrice;
+
+  // 原価管理タブも同時更新（バナー・バッジを反映）
+  renderCostList();
+
+  document.getElementById('rp-price').textContent = okP ? '現在の設定で達成 ✓' : fmtY(globalNeedPrice);
+  document.getElementById('rp-price').style.color = okP ? 'var(--green)' : 'var(--amber)';
+  document.getElementById('rp-price-n').textContent = okP
+    ? `現在の平均売価 ${fmtY(avgPrice)} で十分`
+    : `現在の平均売価 ${fmtY(avgPrice)} → ${fmtY(globalNeedPrice)} が必要（+${fmtY(globalNeedPrice - avgPrice)}）`;
+
+  // ② 必要客数
+  const needCustVal = avgPrice*(1-avgCostRate)*days>0 ? needFoodProfit/(avgPrice*(1-avgCostRate)*days) : 0;
+  const okC = needCustVal <= cust;
+  document.getElementById('rp-cust').textContent = okC ? '現在の設定で達成 ✓' : Math.ceil(needCustVal)+'人';
+  document.getElementById('rp-cust').style.color = okC?'var(--green)':'var(--amber)';
+  document.getElementById('rp-cust-n').textContent = okC ? `現在 ${cust}人 で十分` : `現在 ${cust}人 → +${Math.ceil(needCustVal-cust)}人 必要`;
+  const cpct = needCustVal>0 ? Math.min(cust/needCustVal*100,100) : okC?100:0;
+  document.getElementById('rp-cust-bar').style.width = cpct+'%';
+
+  // ③ 必要物販追加売上
+  const addMerchNeeded = Math.max(gap,0);
+  const okM = profit >= TARGET_PROFIT;
+  document.getElementById('rp-merch').textContent = okM ? '現在の設定で達成 ✓' : '＋'+fmtM(addMerchNeeded)+'追加';
+  document.getElementById('rp-merch').style.color = okM?'var(--green)':'var(--amber)';
+  document.getElementById('rp-merch-n').textContent = okM ? '物販追加不要' : `物販売上 ${fmtM(merchRev)} → ${fmtM(merchRev+addMerchNeeded)} にすれば達成`;
+  document.getElementById('rp-merch-bar').style.width = okM?'100%':(TARGET_PROFIT>0?Math.min(profit/TARGET_PROFIT*100,100)+'%':'0%');
+
+  // MERCH CLEARANCE
+  const clArea = document.getElementById('merch-clearance-list');
+  if(merchs.length>0){
+    clArea.innerHTML = merchs.map(m=>{
+      const rate = getRate(m);
+      const si = statusInfo(rate, target);
+      const cleared = rate <= target;
+      return `<div style="background:${cleared?'var(--green-lll)':'var(--red-ll)'};border:1px solid ${cleared?'var(--green-ll)':'var(--red-l)'};border-radius:8px;padding:9px 12px;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+          <span style="font-size:11px;font-weight:600;">${m.name}</span>
+          <span style="font-size:10px;font-weight:700;color:${cleared?'var(--green)':'var(--red)'};">${cleared?'✓ クリア':'✕ 超過'}</span>
+        </div>
+        <div style="font-size:9px;color:var(--ink3);">原価 ${fmtY(m.cost)} / 推奨売価 ${fmtY(m.price)} / 原価率 ${fmtR(rate)} (目標${target}%)</div>
+      </div>`;
+    }).join('');
+  } else {
+    clArea.innerHTML='<div style="font-size:10px;color:var(--ink4);">物販商品を登録すると表示</div>';
+  }
+}
+
+// ── SUMMARY ──
+function renderSummary(){
+  const target = getTarget();
+  const count = menus.length;
+  document.getElementById('s-count').textContent = count;
+  if(count===0){
+    document.getElementById('s-avg').textContent='—';
+    document.getElementById('s-ng').textContent='0';
+    document.getElementById('rank-list').innerHTML='<div class="empty">メニュー・商品を登録するとランキングが表示されます</div>';
+    return;
+  }
+  const rates = menus.map(m=>getRate(m));
+  const avg = rates.reduce((s,r)=>s+r,0)/rates.length;
+  const ng = menus.filter(m=>getRate(m)>target).length;
+  document.getElementById('s-avg').textContent = fmtR(avg);
+  document.getElementById('s-avg').style.color = avg<=target?'var(--green)':avg<=target*1.1?'var(--amber)':'var(--red)';
+  document.getElementById('s-ng').textContent = ng;
+  document.getElementById('s-avg-bar').style.width = Math.min(avg/target*100,100)+'%';
+  document.getElementById('s-avg-bar').style.background = avg<=target?'var(--green-l)':avg<=target*1.1?'var(--amber-l)':'var(--red-l)';
+
+  const sorted = [...menus].sort((a,b)=>getRate(b)-getRate(a));
+  document.getElementById('rank-list').innerHTML = sorted.map((m,i)=>{
+    const rate = getRate(m);
+    const si = statusInfo(rate, target);
+    return `<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+      <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--ink4);min-width:22px;">${i+1}</span>
+      <span class="mc-badge ${m.type==='food'?'bf':'bm'}">${m.type==='food'?'食材':'物販'}</span>
+      <span style="flex:1;font-size:11px;font-weight:600;">${m.name}</span>
+      <div style="text-align:right;">
+        <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:${rate<=target?'var(--green)':rate<=target*1.1?'var(--amber)':'var(--red)'};">${fmtR(rate)}</div>
+        <div style="font-size:9px;color:var(--ink3);">原価 ${fmtY(m.cost)} / 推奨売価 ${fmtY(m.price)}</div>
+      </div>
+      <span class="mc-status ${si.cls}">${si.lbl}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── SLIDER SYNC ──
+function syncR(rid,nid){ document.getElementById(nid).value=document.getElementById(rid).value; updateTrack(rid); }
+function syncN(rid,nid){
+  const n=document.getElementById(nid), r=document.getElementById(rid);
+  let val=Math.min(Math.max(parseFloat(n.value)||0, parseFloat(r.min)), parseFloat(r.max));
+  r.value=val; n.value=val; updateTrack(rid);
+}
+function updateTrack(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.style.setProperty('--pct',(el.value-el.min)/(el.max-el.min)*100+'%');
+}
+function makeTicks(cid, rid, steps, fmt){
+  const c=document.getElementById(cid), r=document.getElementById(rid);
+  if(!c||!r)return;
+  const mn=parseFloat(r.min),mx=parseFloat(r.max);
+  c.innerHTML=[...Array(steps+1)].map((_,i)=>{
+    const v=mn+(mx-mn)*(i/steps);
+    return `<div class="tick">${fmt?fmt(v):Math.round(v)}</div>`;
+  }).join('');
+}
+
+// ── 収支パラメーター 保存・読み込み ──
+function saveCFParams(){
+  const params = {
+    cust:  v('n-cust'),
+    days:  v('n-days'),
+    labor: v('n-labor'),
+    rent:  v('n-rent'),
+    other: v('n-other'),
+    target: getTarget(),
+    savedAt: new Date().toLocaleString('ja-JP')
+  };
+  localStorage.setItem('cf_params', JSON.stringify(params));
+  showCFMsg(`✓ 保存しました（${params.savedAt}）`);
+}
+
+function loadCFParams(){
+  const saved = JSON.parse(localStorage.getItem('cf_params') || 'null');
+  if(!saved){ showCFMsg('保存された設定がありません', true); return; }
+  setCFParam('n-cust',  saved.cust);
+  setCFParam('n-days',  saved.days);
+  setCFParam('n-labor', saved.labor);
+  setCFParam('n-rent',  saved.rent);
+  setCFParam('n-other', saved.other);
+  if(saved.target){
+    document.getElementById('targetRate').value = saved.target;
+    onTargetChange();
+  }
+  calcCF();
+  showCFMsg(`✓ 設定を読み込みました（保存日時：${saved.savedAt}）`);
+}
+
+function setCFParam(id, val){
+  const r = document.getElementById(id);
+  const n = document.getElementById(id+'-n');
+  if(r && val !== undefined){ r.value = val; updateTrack(id); }
+  if(n && val !== undefined){ n.value = val; }
+}
+
+function showCFMsg(msg, isError=false){
+  const el = document.getElementById('cf-save-msg');
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--red)' : 'var(--green)';
+  el.style.background = isError ? 'var(--red-ll)' : 'var(--green-lll)';
+  el.style.borderColor = isError ? 'var(--red-l)' : 'var(--green-ll)';
+  el.style.display = 'block';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(()=>{ el.style.display='none'; }, 3000);
+}
+
+// init
+makeTicks('tk-n-cust','n-cust',4,v=>Math.round(v)+'人');
+makeTicks('tk-n-days','n-days',4,v=>Math.round(v)+'日');
+makeTicks('tk-n-labor','n-labor',4,v=>Math.round(v)+'万');
+makeTicks('tk-n-rent','n-rent',4,v=>Math.round(v)+'万');
+makeTicks('tk-n-other','n-other',4,v=>Math.round(v)+'万');
+['n-cust','n-days','n-labor','n-rent','n-other'].forEach(updateTrack);
+
+// 収支シミュ側のmerch previewイベント
+document.addEventListener('input', e => {
+  if(['m-bulk-qty','m-bulk-price','m-monthly-qty'].includes(e.target.id)) updateMerchPreview();
+});
+
+function updateMerchPreview(){
+  const bq = v('m-bulk-qty'), bp = v('m-bulk-price'), mq = v('m-monthly-qty');
+  const prev = document.getElementById('merch-preview');
+  if(!bq||!bp){ prev.style.display='none'; return; }
+  const costPer = bp/bq;
+  const price = calcPrice(costPer);
+  prev.style.display = 'block';
+  document.getElementById('mp-cost').textContent = `1個あたり原価：${fmtY(costPer)}（${bq}個 ${fmtY(bp)} ÷ ${bq}個）`;
+  document.getElementById('mp-price').textContent = `推奨売価：${fmtY(price)}（原価率 ${getTarget()}%）`;
+  document.getElementById('mp-monthly').textContent = mq ? `月${mq}個販売 → 売上 ${fmtM(price*mq)} / 仕入れ ${fmtM(costPer*mq)}` : '';
+}
+
+renderCheckList();
+// 保存済みパラメーターがあれば自動読み込み
+const _saved = JSON.parse(localStorage.getItem('cf_params') || 'null');
+if(_saved){
+  setCFParam('n-cust',  _saved.cust);
+  setCFParam('n-days',  _saved.days);
+  setCFParam('n-labor', _saved.labor);
+  setCFParam('n-rent',  _saved.rent);
+  setCFParam('n-other', _saved.other);
+  if(_saved.target) document.getElementById('targetRate').value = _saved.target;
+}
+renderAll();
+</script>
+</body>
+</html>

@@ -203,6 +203,7 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
   .sum-grid{grid-template-columns:1fr 1fr;}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
 
@@ -218,6 +219,7 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
       <span style="font-size:11px;color:rgba(247,244,238,0.5);">%</span>
     </div>
     <div class="goal-tag">TARGET｜合計純利 ¥150万／月</div>
+    <div id="sync-status" style="font-size:10px;color:rgba(247,244,238,0.4);white-space:nowrap;"></div>
   </div>
 </div>
 
@@ -568,6 +570,43 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
 </div>
 
 <script>
+// ── SUPABASE ──
+const SUPABASE_URL = 'https://qkzpaxmthkjmpdclazeo.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_RtO2f1gF-XOGIj85DCvYMA_5JbBTuTY';
+const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function setSyncStatus(s) {
+  const el = document.getElementById('sync-status');
+  if(!el) return;
+  clearTimeout(el._t);
+  if(s==='syncing') { el.textContent='⟳ 同期中...'; el.style.color='rgba(247,244,238,0.4)'; }
+  else if(s==='synced') { el.textContent='✓ クラウド同期済'; el.style.color='#52b788'; el._t=setTimeout(()=>{el.textContent='';},3000); }
+  else if(s==='error') { el.textContent='⚠ 同期エラー（ローカル保存）'; el.style.color='#e88a30'; }
+}
+
+async function dbSave(key, value) {
+  try {
+    const { error } = await _sb.from('app_data').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    if(error) throw error;
+    setSyncStatus('synced');
+  } catch(e) {
+    console.error('Supabase save error:', e);
+    setSyncStatus('error');
+  }
+}
+
+async function dbLoad(key) {
+  try {
+    const { data, error } = await _sb.from('app_data').select('value').eq('key', key).maybeSingle();
+    if(error) throw error;
+    return data?.value ?? null;
+  } catch(e) {
+    console.error('Supabase load error:', e);
+    return null;
+  }
+}
+
+// ── APP ──
 const TARGET_PROFIT = 1500000;
 let menus = JSON.parse(localStorage.getItem('unified_menus') || '[]');
 let openCards = {};
@@ -595,7 +634,7 @@ function statusInfo(rate, target){
   return                        {lbl:`✕ ${r}%`, cls:'sng'};
 }
 
-function save(){ localStorage.setItem('unified_menus', JSON.stringify(menus)); }
+function save(){ localStorage.setItem('unified_menus', JSON.stringify(menus)); setSyncStatus('syncing'); dbSave('unified_menus', menus); }
 
 // ── TAB ──
 function showTab(t){
@@ -637,7 +676,7 @@ let ingredientMaster = JSON.parse(localStorage.getItem('ing_master') || 'null') 
   {id:17,name:'無塩ナッツ',   buyQty:70,  useQty:5,   unitPrice:360},
 ];
 
-function saveMaster(){ localStorage.setItem('ing_master', JSON.stringify(ingredientMaster)); }
+function saveMaster(){ localStorage.setItem('ing_master', JSON.stringify(ingredientMaster)); setSyncStatus('syncing'); dbSave('ing_master', ingredientMaster); }
 function masterCostPer(m){ return m.buyQty>0 ? (m.unitPrice/m.buyQty)*m.useQty : 0; }
 function getMasterNextId(){ return Math.max(0,...ingredientMaster.map(m=>m.id))+1; }
 
@@ -1302,6 +1341,7 @@ function saveCFParams(){
     savedAt: new Date().toLocaleString('ja-JP')
   };
   localStorage.setItem('cf_params', JSON.stringify(params));
+  setSyncStatus('syncing'); dbSave('cf_params', params);
   showCFMsg(`✓ 保存しました（${params.savedAt}）`);
 }
 
@@ -1339,7 +1379,7 @@ function showCFMsg(msg, isError=false){
   el._timer = setTimeout(()=>{ el.style.display='none'; }, 3000);
 }
 
-// init
+// ── INIT ──
 makeTicks('tk-n-cust','n-cust',4,v=>Math.round(v)+'人');
 makeTicks('tk-n-days','n-days',4,v=>Math.round(v)+'日');
 makeTicks('tk-n-labor','n-labor',4,v=>Math.round(v)+'万');
@@ -1347,7 +1387,6 @@ makeTicks('tk-n-rent','n-rent',4,v=>Math.round(v)+'万');
 makeTicks('tk-n-other','n-other',4,v=>Math.round(v)+'万');
 ['n-cust','n-days','n-labor','n-rent','n-other'].forEach(updateTrack);
 
-// 収支シミュ側のmerch previewイベント
 document.addEventListener('input', e => {
   if(['m-bulk-qty','m-bulk-price','m-monthly-qty'].includes(e.target.id)) updateMerchPreview();
 });
@@ -1364,8 +1403,7 @@ function updateMerchPreview(){
   document.getElementById('mp-monthly').textContent = mq ? `月${mq}個販売 → 売上 ${fmtM(price*mq)} / 仕入れ ${fmtM(costPer*mq)}` : '';
 }
 
-renderCheckList();
-// 保存済みパラメーターがあれば自動読み込み
+// ローカルデータで即時描画（オフラインでも表示可能）
 const _saved = JSON.parse(localStorage.getItem('cf_params') || 'null');
 if(_saved){
   setCFParam('n-cust',  _saved.cust);
@@ -1375,7 +1413,32 @@ if(_saved){
   setCFParam('n-other', _saved.other);
   if(_saved.target) document.getElementById('targetRate').value = _saved.target;
 }
+renderCheckList();
 renderAll();
+
+// Supabaseから最新データを非同期読み込み（差分があれば再描画）
+(async () => {
+  setSyncStatus('syncing');
+  const [dbMenus, dbMaster, dbParams] = await Promise.all([
+    dbLoad('unified_menus'),
+    dbLoad('ing_master'),
+    dbLoad('cf_params')
+  ]);
+  let updated = false;
+  if(dbMenus !== null){ menus = dbMenus; localStorage.setItem('unified_menus', JSON.stringify(menus)); updated = true; }
+  if(dbMaster !== null){ ingredientMaster = dbMaster; localStorage.setItem('ing_master', JSON.stringify(ingredientMaster)); updated = true; }
+  if(dbParams !== null){
+    setCFParam('n-cust',  dbParams.cust);
+    setCFParam('n-days',  dbParams.days);
+    setCFParam('n-labor', dbParams.labor);
+    setCFParam('n-rent',  dbParams.rent);
+    setCFParam('n-other', dbParams.other);
+    if(dbParams.target){ document.getElementById('targetRate').value = dbParams.target; onTargetChange(); }
+    updated = true;
+  }
+  if(updated){ renderCheckList(); renderAll(); }
+  setSyncStatus('synced');
+})();
 </script>
 </body>
 </html>

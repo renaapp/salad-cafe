@@ -726,6 +726,10 @@ _sb.auth.onAuthStateChange((event, session) => {
     hideAuthOverlay();
     loadAllFromSupabase();
   } else {
+    menus = [];
+    ingredientMaster = DEFAULT_MASTER.map(m=>({...m}));
+    localStorage.removeItem('unified_menus');
+    localStorage.removeItem('ing_master');
     showAuthOverlay();
   }
 });
@@ -765,14 +769,20 @@ async function dbLoad(key) {
 
 async function loadAllFromSupabase() {
   setSyncStatus('syncing');
+
+  // ログインユーザーが変わった場合に備え、前のユーザーのデータを必ずクリア
+  menus = [];
+  ingredientMaster = DEFAULT_MASTER.map(m=>({...m}));
+  localStorage.removeItem('unified_menus');
+  localStorage.removeItem('ing_master');
+
   const [dbMenus, dbMaster, dbParams] = await Promise.all([
     dbLoad('unified_menus'),
     dbLoad('ing_master'),
     dbLoad('cf_params')
   ]);
-  let updated = false;
-  if(dbMenus !== null){ menus = dbMenus; localStorage.setItem('unified_menus', JSON.stringify(menus)); updated = true; }
-  if(dbMaster !== null){ ingredientMaster = dbMaster; localStorage.setItem('ing_master', JSON.stringify(ingredientMaster)); updated = true; }
+  if(dbMenus !== null){ menus = dbMenus; localStorage.setItem('unified_menus', JSON.stringify(menus)); }
+  if(dbMaster !== null){ ingredientMaster = dbMaster; localStorage.setItem('ing_master', JSON.stringify(ingredientMaster)); }
   if(dbParams !== null){
     setCFParam('n-cust',  dbParams.cust);
     setCFParam('n-days',  dbParams.days);
@@ -780,15 +790,14 @@ async function loadAllFromSupabase() {
     setCFParam('n-rent',  dbParams.rent);
     setCFParam('n-other', dbParams.other);
     if(dbParams.target){ document.getElementById('targetRate').value = dbParams.target; onTargetChange(); }
-    updated = true;
   }
-  if(updated){ renderCheckList(); renderAll(); }
+  renderCheckList(); renderAll();
   setSyncStatus('synced');
 }
 
 // ── APP ──
 const TARGET_PROFIT = 1500000;
-let menus = JSON.parse(localStorage.getItem('unified_menus') || '[]');
+let menus = [];
 let openCards = {};
 let currentType = 'food';
 let globalNeedPrice = 0; // 収支シミュで逆算した必要客単価（原価管理タブと連携）
@@ -836,7 +845,7 @@ function setType(t){
 
 // ── ING ROW ──
 // ── 食材マスター ──
-let ingredientMaster = JSON.parse(localStorage.getItem('ing_master') || 'null') || [
+const DEFAULT_MASTER = [
   {id:1, name:'レタス',       buyQty:400, useQty:40,  unitPrice:238},
   {id:2, name:'サニーレタス', buyQty:160, useQty:40,  unitPrice:138},
   {id:3, name:'さつまいも',   buyQty:250, useQty:30,  unitPrice:198},
@@ -855,6 +864,7 @@ let ingredientMaster = JSON.parse(localStorage.getItem('ing_master') || 'null') 
   {id:16,name:'ゆで卵',       buyQty:10,  useQty:1,   unitPrice:315},
   {id:17,name:'無塩ナッツ',   buyQty:70,  useQty:5,   unitPrice:360},
 ];
+let ingredientMaster = DEFAULT_MASTER.map(m=>({...m}));
 
 function saveMaster(){ localStorage.setItem('ing_master', JSON.stringify(ingredientMaster)); setSyncStatus('syncing'); dbSave('ing_master', ingredientMaster); }
 function masterCostPer(m){ return m.buyQty>0 ? (m.unitPrice/m.buyQty)*m.useQty : 0; }

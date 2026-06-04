@@ -202,10 +202,58 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
   .bn-grid{grid-template-columns:1fr 1fr;}
   .sum-grid{grid-template-columns:1fr 1fr;}
 }
+
+/* ── AUTH OVERLAY ── */
+.auth-overlay{position:fixed;inset:0;background:rgba(26,22,18,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.auth-overlay.hidden{display:none;}
+.auth-box{background:var(--bg2);border-radius:16px;padding:32px 28px;width:100%;max-width:360px;box-shadow:var(--shadow-lg);}
+.auth-logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--ink);margin-bottom:4px;}
+.auth-sub{font-size:11px;color:var(--ink3);margin-bottom:24px;letter-spacing:1px;}
+.auth-tabs{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px;}
+.auth-tab{flex:1;padding:9px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--ink3);font-family:'Noto Sans JP',sans-serif;transition:all 0.2s;}
+.auth-tab.active{background:var(--ink);color:#fff;}
+.auth-field{margin-bottom:14px;}
+.auth-field label{display:block;font-size:10px;color:var(--ink2);margin-bottom:5px;}
+.auth-field input{width:100%;background:#fff;border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-size:13px;color:var(--ink);outline:none;font-family:'Noto Sans JP',sans-serif;}
+.auth-field input:focus{border-color:var(--amber-l);}
+.auth-submit{width:100%;padding:11px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;margin-top:4px;transition:background 0.2s;}
+.auth-submit:hover{background:#2a2520;}
+.auth-submit:disabled{background:var(--ink4);cursor:not-allowed;}
+.auth-error{background:var(--red-ll);border:1px solid var(--red-l);border-radius:7px;padding:9px 12px;font-size:11px;color:var(--red);margin-top:12px;display:none;}
+.auth-msg{background:var(--green-lll);border:1px solid var(--green-ll);border-radius:7px;padding:9px 12px;font-size:11px;color:var(--green);margin-top:12px;display:none;}
+
+/* ── USER CHIP ── */
+.user-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:5px 12px;}
+.user-email{font-size:10px;color:rgba(247,244,238,0.7);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.logout-btn{font-size:10px;font-weight:600;color:rgba(247,244,238,0.5);background:none;border:none;cursor:pointer;padding:0;font-family:'Noto Sans JP',sans-serif;transition:color 0.2s;}
+.logout-btn:hover{color:#fff;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
+
+<!-- ── AUTH OVERLAY ── -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">統合シミュレーター</div>
+    <div class="auth-sub">サラダボウル｜原価管理 × 収支シミュレーション</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="auth-tab-login" onclick="switchAuthTab('login')">ログイン</button>
+      <button class="auth-tab" id="auth-tab-signup" onclick="switchAuthTab('signup')">新規登録</button>
+    </div>
+    <div class="auth-field">
+      <label>メールアドレス</label>
+      <input type="email" id="auth-email" placeholder="example@email.com" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <label>パスワード</label>
+      <input type="password" id="auth-password" placeholder="6文字以上" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitAuth()">
+    </div>
+    <button class="auth-submit" id="auth-submit" onclick="submitAuth()">ログイン</button>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-msg" id="auth-msg"></div>
+  </div>
+</div>
 
 <div class="header">
   <div>
@@ -220,6 +268,10 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
     </div>
     <div class="goal-tag">TARGET｜合計純利 ¥150万／月</div>
     <div id="sync-status" style="font-size:10px;color:rgba(247,244,238,0.4);white-space:nowrap;"></div>
+    <div class="user-chip" id="user-chip" style="display:none;">
+      <span class="user-email" id="user-email-display"></span>
+      <button class="logout-btn" onclick="logout()">ログアウト</button>
+    </div>
   </div>
 </div>
 
@@ -575,6 +627,109 @@ const SUPABASE_URL = 'https://qkzpaxmthkjmpdclazeo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_RtO2f1gF-XOGIj85DCvYMA_5JbBTuTY';
 const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ── AUTH STATE ──
+let currentUser = null;
+
+function userKey(key) {
+  return currentUser ? `${currentUser.id}:${key}` : key;
+}
+
+function showAuthOverlay() {
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  document.getElementById('user-chip').style.display = 'none';
+}
+
+function hideAuthOverlay() {
+  document.getElementById('auth-overlay').classList.add('hidden');
+  const u = currentUser;
+  if(u) {
+    document.getElementById('user-chip').style.display = 'flex';
+    document.getElementById('user-email-display').textContent = u.email;
+  }
+}
+
+function switchAuthTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('auth-tab-login').classList.toggle('active', isLogin);
+  document.getElementById('auth-tab-signup').classList.toggle('active', !isLogin);
+  document.getElementById('auth-submit').textContent = isLogin ? 'ログイン' : '新規登録';
+  document.getElementById('auth-password').autocomplete = isLogin ? 'current-password' : 'new-password';
+  document.getElementById('auth-error').style.display = 'none';
+  document.getElementById('auth-msg').style.display = 'none';
+}
+
+function getAuthTab() {
+  return document.getElementById('auth-tab-login').classList.contains('active') ? 'login' : 'signup';
+}
+
+function setAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('auth-msg').style.display = 'none';
+}
+
+function setAuthMsg(msg) {
+  const el = document.getElementById('auth-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+async function submitAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const btn = document.getElementById('auth-submit');
+
+  if(!email || !password) { setAuthError('メールアドレスとパスワードを入力してください'); return; }
+  if(password.length < 6) { setAuthError('パスワードは6文字以上で入力してください'); return; }
+
+  btn.disabled = true;
+  document.getElementById('auth-error').style.display = 'none';
+  document.getElementById('auth-msg').style.display = 'none';
+
+  try {
+    if(getAuthTab() === 'login') {
+      const { error } = await _sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+    } else {
+      const { error } = await _sb.auth.signUp({ email, password });
+      if(error) throw error;
+      setAuthMsg('確認メールを送信しました。メールのリンクをクリックして登録を完了してください。');
+      btn.disabled = false;
+      return;
+    }
+  } catch(e) {
+    const msg = e.message || '';
+    if(msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
+      setAuthError('メールアドレスまたはパスワードが正しくありません');
+    } else if(msg.includes('Email not confirmed')) {
+      setAuthError('メールアドレスが確認されていません。確認メールをご確認ください');
+    } else if(msg.includes('User already registered')) {
+      setAuthError('このメールアドレスはすでに登録されています。ログインしてください');
+    } else {
+      setAuthError(msg || 'エラーが発生しました');
+    }
+    btn.disabled = false;
+    return;
+  }
+  btn.disabled = false;
+}
+
+async function logout() {
+  await _sb.auth.signOut();
+}
+
+_sb.auth.onAuthStateChange((event, session) => {
+  currentUser = session?.user ?? null;
+  if(currentUser) {
+    hideAuthOverlay();
+    loadAllFromSupabase();
+  } else {
+    showAuthOverlay();
+  }
+});
+
 function setSyncStatus(s) {
   const el = document.getElementById('sync-status');
   if(!el) return;
@@ -585,8 +740,9 @@ function setSyncStatus(s) {
 }
 
 async function dbSave(key, value) {
+  if(!currentUser) return;
   try {
-    const { error } = await _sb.from('app_data').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    const { error } = await _sb.from('app_data').upsert({ key: userKey(key), value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
     if(error) throw error;
     setSyncStatus('synced');
   } catch(e) {
@@ -596,14 +752,38 @@ async function dbSave(key, value) {
 }
 
 async function dbLoad(key) {
+  if(!currentUser) return null;
   try {
-    const { data, error } = await _sb.from('app_data').select('value').eq('key', key).maybeSingle();
+    const { data, error } = await _sb.from('app_data').select('value').eq('key', userKey(key)).maybeSingle();
     if(error) throw error;
     return data?.value ?? null;
   } catch(e) {
     console.error('Supabase load error:', e);
     return null;
   }
+}
+
+async function loadAllFromSupabase() {
+  setSyncStatus('syncing');
+  const [dbMenus, dbMaster, dbParams] = await Promise.all([
+    dbLoad('unified_menus'),
+    dbLoad('ing_master'),
+    dbLoad('cf_params')
+  ]);
+  let updated = false;
+  if(dbMenus !== null){ menus = dbMenus; localStorage.setItem('unified_menus', JSON.stringify(menus)); updated = true; }
+  if(dbMaster !== null){ ingredientMaster = dbMaster; localStorage.setItem('ing_master', JSON.stringify(ingredientMaster)); updated = true; }
+  if(dbParams !== null){
+    setCFParam('n-cust',  dbParams.cust);
+    setCFParam('n-days',  dbParams.days);
+    setCFParam('n-labor', dbParams.labor);
+    setCFParam('n-rent',  dbParams.rent);
+    setCFParam('n-other', dbParams.other);
+    if(dbParams.target){ document.getElementById('targetRate').value = dbParams.target; onTargetChange(); }
+    updated = true;
+  }
+  if(updated){ renderCheckList(); renderAll(); }
+  setSyncStatus('synced');
 }
 
 // ── APP ──
@@ -1416,29 +1596,7 @@ if(_saved){
 renderCheckList();
 renderAll();
 
-// Supabaseから最新データを非同期読み込み（差分があれば再描画）
-(async () => {
-  setSyncStatus('syncing');
-  const [dbMenus, dbMaster, dbParams] = await Promise.all([
-    dbLoad('unified_menus'),
-    dbLoad('ing_master'),
-    dbLoad('cf_params')
-  ]);
-  let updated = false;
-  if(dbMenus !== null){ menus = dbMenus; localStorage.setItem('unified_menus', JSON.stringify(menus)); updated = true; }
-  if(dbMaster !== null){ ingredientMaster = dbMaster; localStorage.setItem('ing_master', JSON.stringify(ingredientMaster)); updated = true; }
-  if(dbParams !== null){
-    setCFParam('n-cust',  dbParams.cust);
-    setCFParam('n-days',  dbParams.days);
-    setCFParam('n-labor', dbParams.labor);
-    setCFParam('n-rent',  dbParams.rent);
-    setCFParam('n-other', dbParams.other);
-    if(dbParams.target){ document.getElementById('targetRate').value = dbParams.target; onTargetChange(); }
-    updated = true;
-  }
-  if(updated){ renderCheckList(); renderAll(); }
-  setSyncStatus('synced');
-})();
+// Supabaseデータ読み込みは onAuthStateChange → loadAllFromSupabase() で実行
 </script>
 </body>
 </html>

@@ -33,7 +33,7 @@ html,body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP','Syne
 .goal-tag{font-size:11px;font-weight:700;color:var(--green-l);background:rgba(61,220,132,0.1);border:1px solid rgba(61,220,132,0.2);padding:5px 14px;border-radius:20px;white-space:nowrap;}
 
 /* ── TAB NAV ── */
-.tab-nav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;gap:0;position:sticky;top:49px;z-index:100;}
+.tab-nav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;gap:0;position:sticky;z-index:100;}
 .tab-btn{padding:12px 20px;font-size:12px;font-weight:600;font-family:'Noto Sans JP',sans-serif;border:none;background:transparent;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;}
 .tab-btn.active{color:var(--ink);border-bottom-color:var(--ink);}
 .tab-btn:hover:not(.active){color:var(--ink2);background:var(--bg3);}
@@ -266,7 +266,11 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
       <input class="target-inp" type="number" id="targetRate" min="10" max="60" value="30" oninput="onTargetChange()">
       <span style="font-size:11px;color:rgba(247,244,238,0.5);">%</span>
     </div>
-    <div class="goal-tag">TARGET｜合計純利 ¥150万／月</div>
+    <div class="target-wrap">
+      <span class="target-lbl">目標純利</span>
+      <input class="target-inp" type="number" id="targetProfit" min="10" max="5000" value="150" oninput="calcCF()" style="width:60px;">
+      <span style="font-size:11px;color:rgba(247,244,238,0.5);">万円/月</span>
+    </div>
     <div id="sync-status" style="font-size:10px;color:rgba(247,244,238,0.4);white-space:nowrap;"></div>
     <div class="user-chip" id="user-chip" style="display:none;">
       <span class="user-email" id="user-email-display"></span>
@@ -388,7 +392,7 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
             <div>
               <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--amber);margin-bottom:2px;">📊 収支シミュから連動｜目標売価ライン</div>
               <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--amber);" id="banner-price">—</div>
-              <div style="font-size:9px;color:var(--ink3);margin-top:2px;">純利¥150万達成に必要な客単価（原価率<span id="banner-rate">30</span>%時）</div>
+              <div style="font-size:9px;color:var(--ink3);margin-top:2px;">純利目標達成に必要な客単価（原価率<span id="banner-rate">30</span>%時）</div>
             </div>
             <div style="text-align:right;">
               <div style="font-size:9px;color:var(--ink3);">各メニューの推奨売価がこれを</div>
@@ -473,13 +477,9 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
             <span class="sl-lbl">人件費（月）</span>
             <div class="sl-inp-wrap">
               <span class="sl-unit">¥</span>
-              <input class="sl-num" type="number" id="n-labor-n" min="0" max="200" step="5" value="60" oninput="syncN('n-labor','n-labor-n');calcCF()">
+              <input class="sl-num" type="number" id="n-labor-n" min="0" step="1" value="60" oninput="calcCF()">
               <span class="sl-unit">万</span>
             </div>
-          </div>
-          <div class="sl-track">
-            <input type="range" class="sr" id="n-labor" min="0" max="200" step="5" value="60" oninput="syncR('n-labor','n-labor-n');calcCF()">
-            <div class="ticks" id="tk-n-labor"></div>
           </div>
         </div>
 
@@ -488,13 +488,9 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
             <span class="sl-lbl">家賃（月）</span>
             <div class="sl-inp-wrap">
               <span class="sl-unit">¥</span>
-              <input class="sl-num" type="number" id="n-rent-n" min="0" max="80" step="1" value="20" oninput="syncN('n-rent','n-rent-n');calcCF()">
+              <input class="sl-num" type="number" id="n-rent-n" min="0" step="1" value="20" oninput="calcCF()">
               <span class="sl-unit">万</span>
             </div>
-          </div>
-          <div class="sl-track">
-            <input type="range" class="sr" id="n-rent" min="0" max="80" step="1" value="20" oninput="syncR('n-rent','n-rent-n');calcCF()">
-            <div class="ticks" id="tk-n-rent"></div>
           </div>
         </div>
 
@@ -503,13 +499,9 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
             <span class="sl-lbl">その他固定費（月）</span>
             <div class="sl-inp-wrap">
               <span class="sl-unit">¥</span>
-              <input class="sl-num" type="number" id="n-other-n" min="0" max="80" step="1" value="15" oninput="syncN('n-other','n-other-n');calcCF()">
+              <input class="sl-num" type="number" id="n-other-n" min="0" step="1" value="15" oninput="calcCF()">
               <span class="sl-unit">万</span>
             </div>
-          </div>
-          <div class="sl-track">
-            <input type="range" class="sr" id="n-other" min="0" max="80" step="1" value="15" oninput="syncR('n-other','n-other-n');calcCF()">
-            <div class="ticks" id="tk-n-other"></div>
           </div>
         </div>
 
@@ -522,13 +514,21 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
         <div class="card-title">収支結果</div>
 
         <div class="goal-sec">
-          <div style="font-size:9px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">🎯 目標達成率（合計純利 ¥150万）</div>
+          <div id="cf-achievement-badge" style="border-radius:8px;padding:9px 12px;margin-bottom:10px;border:1px solid var(--border);text-align:center;background:var(--bg3);">
+            <span id="cf-achievement-text" style="font-size:14px;font-weight:800;font-family:'Syne',sans-serif;color:var(--ink3);">— 計算中 —</span>
+          </div>
+          <div style="font-size:9px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">🎯 目標達成率（<span id="cf-target-label">合計純利 ¥150万</span>）</div>
           <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
             <span style="font-size:10px;color:var(--ink2);">現在の純利</span>
             <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;" id="cf-pct-lbl">0%</span>
           </div>
           <div class="goal-bar-bg"><div class="goal-bar-fill" id="cf-bar" style="width:0%;background:linear-gradient(90deg,var(--amber),var(--green-l));"></div></div>
           <div style="font-size:9px;text-align:right;margin-top:2px;" id="cf-gap-note"></div>
+          <div id="cf-need-price-block" style="background:var(--amber-ll);border:1px solid var(--amber-l);border-radius:8px;padding:10px 12px;margin-top:10px;display:none;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--amber);margin-bottom:4px;">📌 目標達成に必要な客単価</div>
+            <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--amber);line-height:1;" id="cf-need-price-val">—</div>
+            <div style="font-size:9px;color:var(--ink3);margin-top:4px;" id="cf-need-price-sub"></div>
+          </div>
         </div>
 
         <div class="res-grid">
@@ -572,7 +572,7 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
     <div>
       <div class="card">
         <div class="card-title">目標達成の逆算</div>
-        <div style="font-size:9px;color:var(--ink3);margin-bottom:12px;line-height:1.6;">純利¥150万に届かせるには？</div>
+        <div style="font-size:9px;color:var(--ink3);margin-bottom:12px;line-height:1.6;" id="rp-subtitle">純利目標に届かせるには？</div>
 
         <div style="background:var(--amber-ll);border:1px solid var(--amber-l);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
           <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--amber);margin-bottom:6px;">📌 目標達成に必要な客単価</div>
@@ -727,7 +727,7 @@ _sb.auth.onAuthStateChange((event, session) => {
     loadAllFromSupabase();
   } else {
     menus = [];
-    ingredientMaster = DEFAULT_MASTER.map(m=>({...m}));
+    ingredientMaster = [];
     localStorage.removeItem('unified_menus');
     localStorage.removeItem('ing_master');
     showAuthOverlay();
@@ -772,7 +772,7 @@ async function loadAllFromSupabase() {
 
   // ログインユーザーが変わった場合に備え、前のユーザーのデータを必ずクリア
   menus = [];
-  ingredientMaster = DEFAULT_MASTER.map(m=>({...m}));
+  ingredientMaster = [];
   localStorage.removeItem('unified_menus');
   localStorage.removeItem('ing_master');
 
@@ -790,13 +790,14 @@ async function loadAllFromSupabase() {
     setCFParam('n-rent',  dbParams.rent);
     setCFParam('n-other', dbParams.other);
     if(dbParams.target){ document.getElementById('targetRate').value = dbParams.target; onTargetChange(); }
+    if(dbParams.targetProfit){ const tp=document.getElementById('targetProfit'); if(tp) tp.value=dbParams.targetProfit; }
   }
   renderCheckList(); renderAll();
   setSyncStatus('synced');
 }
 
 // ── APP ──
-const TARGET_PROFIT = 1500000;
+function getTargetProfit(){ return (parseFloat(document.getElementById('targetProfit')?.value)||150)*10000; }
 let menus = [];
 let openCards = {};
 let currentType = 'food';
@@ -864,7 +865,7 @@ const DEFAULT_MASTER = [
   {id:16,name:'ゆで卵',       buyQty:10,  useQty:1,   unitPrice:315},
   {id:17,name:'無塩ナッツ',   buyQty:70,  useQty:5,   unitPrice:360},
 ];
-let ingredientMaster = DEFAULT_MASTER.map(m=>({...m}));
+let ingredientMaster = [];
 
 function saveMaster(){ localStorage.setItem('ing_master', JSON.stringify(ingredientMaster)); setSyncStatus('syncing'); dbSave('ing_master', ingredientMaster); }
 function masterCostPer(m){ return m.buyQty>0 ? (m.unitPrice/m.buyQty)*m.useQty : 0; }
@@ -1256,8 +1257,9 @@ function saveEdit(id){
 // ── CASHFLOW CALC ──
 function calcCF(){
   const target = getTarget();
+  const targetProfit = getTargetProfit();
   const cust  = v('n-cust'), days = v('n-days');
-  const labor = v('n-labor')*10000, rent = v('n-rent')*10000, other = v('n-other')*10000;
+  const labor = v('n-labor-n')*10000, rent = v('n-rent-n')*10000, other = v('n-other-n')*10000;
 
   const foods = menus.filter(m=>m.type==='food');
   const merchs = menus.filter(m=>m.type==='merch');
@@ -1267,39 +1269,68 @@ function calcCF(){
   const fixedCost = labor + rent + other;
   const merchProfit = merchRev - merchCost;
 
-  // ── PASS 1: globalNeedPriceを先に確定 ──
-  // 原価ベースの推奨売価のみで仮avgCostRateを計算
-  const getBasedOnCost = m => getTarget()>0 ? Math.ceil(m.cost/(getTarget()/100)/10)*10 : 0;
-  const pass1AvgPrice = foods.length>0 ? foods.reduce((s,m)=>s+getBasedOnCost(m),0)/foods.length : 0;
-  const pass1CostRate = foods.length>0 ? foods.reduce((s,m)=>s+(m.cost/(getBasedOnCost(m)||1)),0)/foods.length : target/100;
-  const pass1NeedPrice = cust*days*(1-pass1CostRate) > 0
-    ? Math.ceil((TARGET_PROFIT - merchProfit + fixedCost) / (cust*days*(1-pass1CostRate)) / 10) * 10
-    : 0;
-  // globalNeedPriceを更新
-  globalNeedPrice = pass1NeedPrice;
+  // 原価管理タブの売値（m.price）をそのまま使用
+  const avgPrice = foods.length>0 ? foods.reduce((s,m)=>s+m.price,0)/foods.length : 0;
+  const avgCostRate = foods.length>0 ? foods.reduce((s,m)=>s+(m.price>0?m.cost/m.price:target/100),0)/foods.length : target/100;
 
-  // ── PASS 2: globalNeedPrice確定後に実効売価で再計算 ──
-  const getEffectivePrice = m => {
-    const basedOnCost = getBasedOnCost(m);
-    return globalNeedPrice > 0 && basedOnCost < globalNeedPrice ? globalNeedPrice : basedOnCost;
-  };
-  const avgPrice = foods.length>0 ? foods.reduce((s,m)=>s+getEffectivePrice(m),0)/foods.length : 0;
-  const avgCostRate = foods.length>0 ? foods.reduce((s,m)=>s+(m.cost/(getEffectivePrice(m)||1)),0)/foods.length : target/100;
-
-  const effectiveUnitPrice = foods.length>0 ? avgPrice : 0;
+  const effectiveUnitPrice = avgPrice;
   const foodRev  = effectiveUnitPrice * cust * days;
   const foodCost = foodRev * avgCostRate;
 
   const totalRev = foodRev + merchRev;
   const totalCost = foodCost + merchCost + labor + rent + other;
   const profit = totalRev - totalCost;
-  const pct = Math.round(profit/TARGET_PROFIT*100);
-  const gap = TARGET_PROFIT - profit;
+  const pct = Math.round(profit/targetProfit*100);
+  const gap = targetProfit - profit;
 
-  // 最低必要売価（PASS2ベースで再計算）
+  // 目標達成に必要な客単価を計算
+  const nonFoodProfit = merchRev - merchCost - labor - rent - other;
+  const needFoodProfit = targetProfit - nonFoodProfit;
   const minPriceNeeded = cust*days*(1-avgCostRate) > 0
-    ? Math.ceil((TARGET_PROFIT - merchProfit + fixedCost) / (cust*days*(1-avgCostRate)) / 10) * 10
+    ? Math.ceil(needFoodProfit / (cust*days*(1-avgCostRate)) / 10) * 10
     : 0;
+  globalNeedPrice = minPriceNeeded;
+
+  // 目標ラベル更新
+  const tpLabel = document.getElementById('cf-target-label');
+  if(tpLabel) tpLabel.textContent = `合計純利 ${fmtM(targetProfit)}`;
+
+  // 達成状況バッジ
+  const achieved = profit >= targetProfit;
+  const achBadge = document.getElementById('cf-achievement-badge');
+  const achText = document.getElementById('cf-achievement-text');
+  if(achBadge && achText){
+    achText.textContent = achieved ? '目標達成！' : '目標未達成';
+    achBadge.style.background = achieved ? 'var(--green-lll)' : 'var(--red-ll)';
+    achBadge.style.borderColor = achieved ? 'var(--green-ll)' : 'var(--red-l)';
+    achText.style.color = achieved ? 'var(--green)' : 'var(--red)';
+  }
+
+  // 必要客単価ブロック
+  const needPriceBlock = document.getElementById('cf-need-price-block');
+  const needPriceVal = document.getElementById('cf-need-price-val');
+  const needPriceSub = document.getElementById('cf-need-price-sub');
+  if(needPriceBlock && needPriceVal){
+    if(achieved){
+      needPriceBlock.style.display = 'block';
+      needPriceBlock.style.background = 'var(--green-lll)';
+      needPriceBlock.style.borderColor = 'var(--green-ll)';
+      document.querySelector('#cf-need-price-block div').style.color = 'var(--green)';
+      needPriceVal.textContent = '達成済み ✓';
+      needPriceVal.style.color = 'var(--green)';
+      if(needPriceSub) needPriceSub.textContent = `現在の平均売価 ${fmtY(avgPrice)} で目標をクリア`;
+    } else {
+      needPriceBlock.style.display = 'block';
+      needPriceBlock.style.background = 'var(--amber-ll)';
+      needPriceBlock.style.borderColor = 'var(--amber-l)';
+      if(document.querySelector('#cf-need-price-block div')) document.querySelector('#cf-need-price-block div').style.color = 'var(--amber)';
+      needPriceVal.textContent = minPriceNeeded>0 ? fmtY(minPriceNeeded) : '—';
+      needPriceVal.style.color = 'var(--amber)';
+      if(needPriceSub) needPriceSub.textContent = avgPrice>0
+        ? `現在の平均売価 ${fmtY(avgPrice)} → +${fmtY(Math.max(0,minPriceNeeded-avgPrice))} 不足`
+        : 'メニューを登録すると計算されます';
+    }
+  }
 
   // goal bar
   document.getElementById('cf-pct-lbl').textContent = pct+'%';
@@ -1315,7 +1346,7 @@ function calcCF(){
   document.getElementById('cf-total-rev').textContent = fmtM(totalRev);
   const profEl = document.getElementById('cf-profit');
   profEl.textContent = fmtM(profit);
-  profEl.className = 'rc-val '+(profit>=TARGET_PROFIT?'c-ok':profit>=0?'':'c-ng');
+  profEl.className = 'rc-val '+(profit>=targetProfit?'c-ok':profit>=0?'':'c-ng');
   document.getElementById('cf-per-person').textContent = '1人あたり '+fmtM(profit/3);
 
   // breakdown
@@ -1328,11 +1359,11 @@ function calcCF(){
   document.getElementById('bk-ot').textContent = '−'+fmtM(other);
   const bkp = document.getElementById('bk-profit');
   bkp.textContent = fmtM(profit);
-  bkp.style.color = profit>=TARGET_PROFIT?'var(--green)':profit>=0?'var(--amber)':'var(--red)';
+  bkp.style.color = profit>=targetProfit?'var(--green)':profit>=0?'var(--amber)':'var(--red)';
 
   // verdict
   let msg='';
-  if(profit>=TARGET_PROFIT) msg=`<strong>目標達成！</strong> 現在の設定で純利${fmtM(profit)}。物販をさらに伸ばすと安定します。`;
+  if(profit>=targetProfit) msg=`<strong>目標達成！</strong> 現在の設定で純利${fmtM(profit)}。物販をさらに伸ばすと安定します。`;
   else if(profit>=0) msg=`あと${fmtM(gap)}で目標達成。右の逆算パネルを参考に調整してください。`;
   else msg=`コストが売上を上回っています。人件費・家賃・原価率の見直しを先に行いましょう。`;
   document.getElementById('cf-verdict').innerHTML=msg;
@@ -1340,34 +1371,24 @@ function calcCF(){
   // linked items display
   const foodArea = document.getElementById('linked-food-area');
   if(foods.length>0){
-    // 各メニューの実効売価（引き上げ後）を計算
-    const foodsWithEffective = foods.map(m=>{
-      const basedOnCost = getTarget()>0 ? Math.ceil(m.cost/(getTarget()/100)/10)*10 : 0;
-      const ep = globalNeedPrice > 0 && basedOnCost < globalNeedPrice ? globalNeedPrice : basedOnCost;
-      const isAbove = minPriceNeeded===0 || ep >= minPriceNeeded;
-      const isRaised = globalNeedPrice > 0 && basedOnCost < globalNeedPrice;
-      return {...m, effectivePrice: ep, isAbove, isRaised, basedOnCost};
-    });
-    const belowMin = foodsWithEffective.filter(m=>!m.isAbove);
-    foodArea.innerHTML = foodsWithEffective.map(m=>`
-      <div class="linked-item" style="background:${m.isAbove?'var(--green-lll)':'var(--red-ll)'};border-color:${m.isAbove?'var(--green-ll)':'var(--red-l)'};">
+    const belowMin = foods.filter(m=>minPriceNeeded>0 && m.price<minPriceNeeded);
+    foodArea.innerHTML = foods.map(m=>{
+      const isAbove = minPriceNeeded===0 || m.price >= minPriceNeeded;
+      return `
+      <div class="linked-item" style="background:${isAbove?'var(--green-lll)':'var(--red-ll)'};border-color:${isAbove?'var(--green-ll)':'var(--red-l)'};">
         <div class="li-left">
           <span class="li-badge bf">食材</span>
           <div>
             <div class="li-name">${m.name}</div>
-            <div class="li-sub">
-              ${m.isRaised
-                ? `原価ベース¥${m.basedOnCost.toLocaleString()} → 目標売価に引上 / 原価率 ${fmtR(m.cost/m.effectivePrice*100)}`
-                : `推奨売価 ${fmtY(m.effectivePrice)} / 原価率 ${fmtR(m.cost/m.effectivePrice*100)}`}
-            </div>
+            <div class="li-sub">売価 ${fmtY(m.price)} / 原価率 ${fmtR(m.price>0?m.cost/m.price*100:0)}</div>
           </div>
         </div>
         <div style="text-align:right;">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:${m.isAbove?'var(--green)':'var(--red)'};">${fmtY(m.effectivePrice)}</div>
-          <div style="font-size:9px;color:${m.isAbove?'var(--green)':'var(--red)'};">${m.isAbove?'✓ クリア':'✕ 不足'}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:${isAbove?'var(--green)':'var(--red)'};">${fmtY(m.price)}</div>
+          <div style="font-size:9px;color:${isAbove?'var(--green)':'var(--red)'};">${isAbove?'✓ クリア':'✕ 不足'}</div>
         </div>
-      </div>`).join('') +
-    // 平均・最低必要売価サマリー
+      </div>`;
+    }).join('') +
     `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:6px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div style="text-align:center;padding:6px;background:#fff;border-radius:6px;">
@@ -1402,26 +1423,16 @@ function calcCF(){
     merchArea.innerHTML='<div style="font-size:10px;color:var(--ink4);padding:8px 0;">物販商品を登録すると自動反映</div>';
   }
 
-  // REVERSE CALC
-  const totalFixedCost = labor+rent+other+foodCost+merchCost;
-  // ① 必要客単価
-  const needPrice = cust*days>0 ? (TARGET_PROFIT - merchRev + totalFixedCost - foodCost + foodRev*avgCostRate) / (cust*days*(1-avgCostRate)) : 0;
-  // simpler: (TARGET - nonFood) / (cust*days*(1-avgCostRate))
-  const nonFoodProfit = merchRev - merchCost - labor - rent - other;
-  const needFoodProfit = TARGET_PROFIT - nonFoodProfit;
-  // グローバルはPASS1で確定済み。ここでは逆算表示用の値を使う
-  const needPriceVal = cust*days*(1-avgCostRate)>0 ? needFoodProfit/(cust*days*(1-avgCostRate)) : 0;
-  // globalNeedPriceはPASS1で設定済みなので上書きしない
-  const okP = avgPrice >= globalNeedPrice;
-
   // 原価管理タブも同時更新（バナー・バッジを反映）
   renderCostList();
 
-  document.getElementById('rp-price').textContent = okP ? '現在の設定で達成 ✓' : fmtY(globalNeedPrice);
-  document.getElementById('rp-price').style.color = okP ? 'var(--green)' : 'var(--amber)';
-  document.getElementById('rp-price-n').textContent = okP
+  // REVERSE CALC
+  const okP = avgPrice >= minPriceNeeded && minPriceNeeded > 0;
+  document.getElementById('rp-price').textContent = (achieved||okP) ? '現在の設定で達成 ✓' : fmtY(minPriceNeeded);
+  document.getElementById('rp-price').style.color = (achieved||okP) ? 'var(--green)' : 'var(--amber)';
+  document.getElementById('rp-price-n').textContent = (achieved||okP)
     ? `現在の平均売価 ${fmtY(avgPrice)} で十分`
-    : `現在の平均売価 ${fmtY(avgPrice)} → ${fmtY(globalNeedPrice)} が必要（+${fmtY(globalNeedPrice - avgPrice)}）`;
+    : `現在の平均売価 ${fmtY(avgPrice)} → ${fmtY(minPriceNeeded)} が必要（+${fmtY(minPriceNeeded - avgPrice)}）`;
 
   // ② 必要客数
   const needCustVal = avgPrice*(1-avgCostRate)*days>0 ? needFoodProfit/(avgPrice*(1-avgCostRate)*days) : 0;
@@ -1434,11 +1445,11 @@ function calcCF(){
 
   // ③ 必要物販追加売上
   const addMerchNeeded = Math.max(gap,0);
-  const okM = profit >= TARGET_PROFIT;
+  const okM = profit >= targetProfit;
   document.getElementById('rp-merch').textContent = okM ? '現在の設定で達成 ✓' : '＋'+fmtM(addMerchNeeded)+'追加';
   document.getElementById('rp-merch').style.color = okM?'var(--green)':'var(--amber)';
   document.getElementById('rp-merch-n').textContent = okM ? '物販追加不要' : `物販売上 ${fmtM(merchRev)} → ${fmtM(merchRev+addMerchNeeded)} にすれば達成`;
-  document.getElementById('rp-merch-bar').style.width = okM?'100%':(TARGET_PROFIT>0?Math.min(profit/TARGET_PROFIT*100,100)+'%':'0%');
+  document.getElementById('rp-merch-bar').style.width = okM?'100%':(targetProfit>0?Math.min(profit/targetProfit*100,100)+'%':'0%');
 
   // MERCH CLEARANCE
   const clArea = document.getElementById('merch-clearance-list');
@@ -1524,10 +1535,11 @@ function saveCFParams(){
   const params = {
     cust:  v('n-cust'),
     days:  v('n-days'),
-    labor: v('n-labor'),
-    rent:  v('n-rent'),
-    other: v('n-other'),
+    labor: v('n-labor-n'),
+    rent:  v('n-rent-n'),
+    other: v('n-other-n'),
     target: getTarget(),
+    targetProfit: parseFloat(document.getElementById('targetProfit')?.value)||150,
     savedAt: new Date().toLocaleString('ja-JP')
   };
   localStorage.setItem('cf_params', JSON.stringify(params));
@@ -1546,6 +1558,10 @@ function loadCFParams(){
   if(saved.target){
     document.getElementById('targetRate').value = saved.target;
     onTargetChange();
+  }
+  if(saved.targetProfit){
+    const tp = document.getElementById('targetProfit');
+    if(tp) tp.value = saved.targetProfit;
   }
   calcCF();
   showCFMsg(`✓ 設定を読み込みました（保存日時：${saved.savedAt}）`);
@@ -1572,10 +1588,16 @@ function showCFMsg(msg, isError=false){
 // ── INIT ──
 makeTicks('tk-n-cust','n-cust',4,v=>Math.round(v)+'人');
 makeTicks('tk-n-days','n-days',4,v=>Math.round(v)+'日');
-makeTicks('tk-n-labor','n-labor',4,v=>Math.round(v)+'万');
-makeTicks('tk-n-rent','n-rent',4,v=>Math.round(v)+'万');
-makeTicks('tk-n-other','n-other',4,v=>Math.round(v)+'万');
-['n-cust','n-days','n-labor','n-rent','n-other'].forEach(updateTrack);
+['n-cust','n-days'].forEach(updateTrack);
+
+// タブナビをヘッダー直下に固定
+function updateTabNavOffset(){
+  const header=document.querySelector('.header');
+  const nav=document.querySelector('.tab-nav');
+  if(header&&nav) nav.style.top=header.offsetHeight+'px';
+}
+window.addEventListener('resize',updateTabNavOffset);
+requestAnimationFrame(updateTabNavOffset);
 
 document.addEventListener('input', e => {
   if(['m-bulk-qty','m-bulk-price','m-monthly-qty'].includes(e.target.id)) updateMerchPreview();
@@ -1602,6 +1624,7 @@ if(_saved){
   setCFParam('n-rent',  _saved.rent);
   setCFParam('n-other', _saved.other);
   if(_saved.target) document.getElementById('targetRate').value = _saved.target;
+  if(_saved.targetProfit){ const tp=document.getElementById('targetProfit'); if(tp) tp.value=_saved.targetProfit; }
 }
 renderCheckList();
 renderAll();

@@ -328,13 +328,6 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
             <div style="margin-top:8px;">
               <button onclick="togglePdfImport()" id="pdf-import-btn" style="width:100%;font-size:10px;color:var(--blue);background:none;border:1px dashed var(--blue-l);border-radius:6px;padding:5px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">PDF見積書から取り込む</button>
               <div id="pdf-import-panel" style="display:none;margin-top:8px;padding:10px;background:#fff;border:1px solid var(--border);border-radius:6px;">
-                <div style="margin-bottom:8px;">
-                  <div style="font-size:9px;font-weight:700;color:var(--ink3);margin-bottom:4px;">Claude API キー</div>
-                  <div style="display:flex;gap:4px;">
-                    <input type="password" id="pdf-api-key-input" placeholder="sk-ant-..." style="flex:1;font-size:10px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-family:monospace;outline:none;">
-                    <button onclick="savePdfApiKey()" style="font-size:10px;color:var(--green);background:none;border:1px solid var(--green-l);border-radius:5px;padding:4px 8px;cursor:pointer;white-space:nowrap;font-family:'Noto Sans JP',sans-serif;">保存</button>
-                  </div>
-                </div>
                 <label style="display:block;border:2px dashed var(--border2);border-radius:6px;padding:16px;text-align:center;cursor:pointer;background:var(--bg3);">
                   <div style="font-size:11px;color:var(--ink3);">PDFファイルをクリックして選択</div>
                   <div style="font-size:9px;color:var(--ink4);margin-top:4px;">見積書・納品書など</div>
@@ -1664,17 +1657,6 @@ function togglePdfImport(){
   const isOpen = panel.style.display === 'block';
   panel.style.display = isOpen ? 'none' : 'block';
   btn.textContent = isOpen ? 'PDF見積書から取り込む' : '✕ PDF取り込みを閉じる';
-  if(!isOpen){
-    const saved = localStorage.getItem('claude_api_key') || '';
-    document.getElementById('pdf-api-key-input').value = saved;
-  }
-}
-
-function savePdfApiKey(){
-  const key = document.getElementById('pdf-api-key-input').value.trim();
-  if(!key){ alert('APIキーを入力してください'); return; }
-  localStorage.setItem('claude_api_key', key);
-  setPdfStatus('APIキーを保存しました', 'green');
 }
 
 function setPdfStatus(msg, color){
@@ -1686,59 +1668,26 @@ function setPdfStatus(msg, color){
 
 function handlePdfFile(file){
   if(!file) return;
-  const apiKey = localStorage.getItem('claude_api_key') || document.getElementById('pdf-api-key-input').value.trim();
-  if(!apiKey){ alert('Claude APIキーを入力・保存してください'); return; }
   setPdfStatus('PDFを読み込んでいます...', 'normal');
   const reader = new FileReader();
   reader.onload = function(e){
     const base64 = e.target.result.split(',')[1];
-    extractFromPdf(base64, apiKey);
+    extractFromPdf(base64);
   };
   reader.readAsDataURL(file);
 }
 
-async function extractFromPdf(base64Data, apiKey){
+async function extractFromPdf(base64Data){
   setPdfStatus('Claude APIで解析中...', 'normal');
-  const prompt = `この見積書・納品書PDFから食材（食品）の情報を抽出してください。
-以下のJSON配列形式だけを返してください。余分なテキストは不要です。
-
-[
-  {"name": "食材名", "unitPrice": 数値(円), "buyQty": 数値(g)},
-  ...
-]
-
-ルール:
-- name: 食材・食品名のみ（消耗品・飲料・加工品は除外）
-- unitPrice: 税込価格（円、整数）。税抜の場合は×1.1して整数に
-- buyQty: 購入数量をグラムに変換（kg→×1000、g→そのまま、個数の場合はおよその重量g）
-- 情報が不明・不確かな項目はスキップ
-- 食材でないものはスキップ`;
-
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/analyze-pdf', {
       method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'anthropic-dangerous-direct-browser-calls': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-8',
-        max_tokens: 2048,
-        thinking: { type: 'adaptive' },
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } },
-            { type: 'text', text: prompt }
-          ]
-        }]
-      })
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ base64Data })
     });
     if(!res.ok){
       const err = await res.json().catch(()=>({}));
-      setPdfStatus('APIエラー: ' + (err.error?.message || res.status), 'red');
+      setPdfStatus('APIエラー: ' + (err.error || res.status), 'red');
       return;
     }
     const data = await res.json();

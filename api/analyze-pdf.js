@@ -39,7 +39,6 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-opus-4-8',
         max_tokens: 2048,
-        thinking: { type: 'adaptive' },
         messages: [{
           role: 'user',
           content: [
@@ -56,7 +55,18 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-    return res.status(200).json(data);
+    const textBlock = data.content?.find(b => b.type === 'text');
+    if (!textBlock) {
+      return res.status(422).json({ error: 'JSON形式のデータが見つかりませんでした' });
+    }
+
+    const match = textBlock.text.match(/\[[\s\S]*\]/);
+    if (!match) {
+      return res.status(422).json({ error: 'JSON形式のデータが見つかりませんでした' });
+    }
+
+    const items = JSON.parse(match[0]);
+    return res.status(200).json(items);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

@@ -1691,11 +1691,7 @@ async function extractFromPdf(base64Data){
       return;
     }
     const data = await res.json();
-    const textBlock = data.content.find(b => b.type === 'text');
-    if(!textBlock){ setPdfStatus('レスポンスにテキストがありません', 'red'); return; }
-    const jsonMatch = textBlock.text.match(/\[[\s\S]*\]/);
-    if(!jsonMatch){ setPdfStatus('JSON形式のデータが見つかりませんでした', 'red'); return; }
-    const items = JSON.parse(jsonMatch[0]);
+    const items = Array.isArray(data) ? data : [];
     if(!items.length){ setPdfStatus('食材が見つかりませんでした', 'red'); return; }
     setPdfStatus(`${items.length}件の食材を読み取りました`, 'green');
     renderPdfPreview(items);

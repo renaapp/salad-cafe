@@ -316,14 +316,16 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
           <!-- 食材マスター編集パネル -->
           <div id="master-edit-panel" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">
             <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--ink3);margin-bottom:8px;">食材マスター編集</div>
-            <div style="display:grid;grid-template-columns:1fr 64px 60px 60px 24px;gap:4px;margin-bottom:4px;">
-              <div class="ing-col-lbl">食材名</div>
-              <div class="ing-col-lbl">購入量(g)</div>
-              <div class="ing-col-lbl">1人前(g)</div>
-              <div class="ing-col-lbl">単価(円)</div>
-              <div class="ing-col-lbl"></div>
+            <div style="overflow-x:auto;margin-bottom:8px;">
+              <div style="display:grid;grid-template-columns:130px 64px 60px 60px 24px;gap:4px;margin-bottom:4px;min-width:320px;">
+                <div class="ing-col-lbl">食材名</div>
+                <div class="ing-col-lbl">購入量(g)</div>
+                <div class="ing-col-lbl">1人前(g)</div>
+                <div class="ing-col-lbl">単価(円)</div>
+                <div class="ing-col-lbl"></div>
+              </div>
+              <div id="master-list" style="display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto;"></div>
             </div>
-            <div id="master-list" style="display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto;margin-bottom:8px;"></div>
             <button onclick="addMasterRow()" style="width:100%;font-size:10px;color:var(--amber);background:none;border:1px dashed var(--amber-l);border-radius:6px;padding:5px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">＋ 食材を追加</button>
             <div style="margin-top:8px;">
               <button onclick="togglePdfImport()" id="pdf-import-btn" style="width:100%;font-size:10px;color:var(--blue);background:none;border:1px dashed var(--blue-l);border-radius:6px;padding:5px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">PDF見積書から取り込む</button>
@@ -894,7 +896,7 @@ function renderMasterList(){
   const list = document.getElementById('master-list');
   if(!list) return;
   list.innerHTML = ingredientMaster.map(m=>`
-    <div style="display:grid;grid-template-columns:1fr 64px 60px 60px 24px;gap:4px;align-items:center;" data-mid="${m.id}">
+    <div style="display:grid;grid-template-columns:130px 64px 60px 60px 24px;gap:4px;align-items:center;min-width:320px;" data-mid="${m.id}">
       <input class="ing-inp" type="text" value="${m.name}" onchange="updateMaster(${m.id},'name',this.value)" style="font-size:10px;">
       <input class="ing-inp" type="number" value="${m.buyQty}" onchange="updateMaster(${m.id},'buyQty',+this.value)" style="text-align:right;font-size:10px;">
       <input class="ing-inp" type="number" value="${m.useQty}" onchange="updateMaster(${m.id},'useQty',+this.value)" style="text-align:right;font-size:10px;">

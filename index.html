@@ -893,14 +893,19 @@ function saveMaster(){ localStorage.setItem('ing_master', JSON.stringify(ingredi
 function masterCostPer(m){ return m.buyQty>0 ? (m.unitPrice/m.buyQty)*m.useQty : 0; }
 function getMasterNextId(){ return Math.max(0,...ingredientMaster.map(m=>m.id))+1; }
 
+function makeUnitSelect(id, currentUnit){
+  const units = ['g','kg','個','本','枚','ml','L','パック','袋'];
+  const opts = units.map(u => '<option value="'+u+'"'+(u===(currentUnit||'g')?' selected':'')+'>'+u+'</option>').join('');
+  return '<select class="ing-inp" onchange="updateMaster('+id+',\'unit\',this.value)" style="font-size:10px;padding:4px 2px;">'+opts+'</select>';
+}
+
 function renderMasterList(){
   const list = document.getElementById('master-list');
   if(!list) return;
-  const unitOpts = ['g','kg','個','本','枚','ml','L','パック','袋'].map(u=>`<option value="${u}">${u}</option>`).join('');
   list.innerHTML = ingredientMaster.map(m=>`
     <div style="display:grid;grid-template-columns:160px 50px 58px 58px 58px 24px;gap:4px;align-items:center;min-width:420px;" data-mid="${m.id}">
       <input class="ing-inp" type="text" value="${m.name}" onchange="updateMaster(${m.id},'name',this.value)" style="font-size:10px;">
-      <select class="ing-inp" onchange="updateMaster(${m.id},'unit',this.value)" style="font-size:10px;padding:4px 2px;">${unitOpts.replace(\`value="\${m.unit||'g'}"\`,\`value="\${m.unit||'g'}" selected\`)}</select>
+      ${makeUnitSelect(m.id, m.unit)}
       <input class="ing-inp" type="number" value="${m.buyQty}" onchange="updateMaster(${m.id},'buyQty',+this.value)" style="text-align:right;font-size:10px;">
       <input class="ing-inp" type="number" value="${m.useQty}" onchange="updateMaster(${m.id},'useQty',+this.value)" style="text-align:right;font-size:10px;">
       <input class="ing-inp" type="number" value="${m.unitPrice}" onchange="updateMaster(${m.id},'unitPrice',+this.value)" style="text-align:right;font-size:10px;">

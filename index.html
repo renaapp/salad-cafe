@@ -317,10 +317,11 @@ input[type=range].sr::-webkit-slider-runnable-track{background:linear-gradient(9
           <div id="master-edit-panel" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">
             <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--ink3);margin-bottom:8px;">食材マスター編集</div>
             <div style="overflow-x:auto;margin-bottom:8px;">
-              <div style="display:grid;grid-template-columns:130px 64px 60px 60px 24px;gap:4px;margin-bottom:4px;min-width:320px;">
+              <div style="display:grid;grid-template-columns:160px 50px 58px 58px 58px 24px;gap:4px;margin-bottom:4px;min-width:420px;">
                 <div class="ing-col-lbl">食材名</div>
-                <div class="ing-col-lbl">購入量(g)</div>
-                <div class="ing-col-lbl">1人前(g)</div>
+                <div class="ing-col-lbl">単位</div>
+                <div class="ing-col-lbl">購入量</div>
+                <div class="ing-col-lbl">1人前</div>
                 <div class="ing-col-lbl">単価(円)</div>
                 <div class="ing-col-lbl"></div>
               </div>
@@ -868,23 +869,23 @@ function setType(t){
 // ── ING ROW ──
 // ── 食材マスター ──
 const DEFAULT_MASTER = [
-  {id:1, name:'レタス',       buyQty:400, useQty:40,  unitPrice:238},
-  {id:2, name:'サニーレタス', buyQty:160, useQty:40,  unitPrice:138},
-  {id:3, name:'さつまいも',   buyQty:250, useQty:30,  unitPrice:198},
-  {id:4, name:'にんじん',     buyQty:400, useQty:15,  unitPrice:68},
-  {id:5, name:'アボカド',     buyQty:120, useQty:30,  unitPrice:198},
-  {id:6, name:'かぼちゃ',     buyQty:380, useQty:30,  unitPrice:168},
-  {id:7, name:'ズッキーニ',   buyQty:90,  useQty:20,  unitPrice:198},
-  {id:8, name:'きゅうり',     buyQty:90,  useQty:15,  unitPrice:68},
-  {id:9, name:'プチトマト',   buyQty:230, useQty:35,  unitPrice:198},
-  {id:10,name:'オクラ',       buyQty:40,  useQty:15,  unitPrice:180},
-  {id:11,name:'豆苗',         buyQty:100, useQty:25,  unitPrice:118},
-  {id:12,name:'えび',         buyQty:200, useQty:40,  unitPrice:458},
-  {id:13,name:'鮭',           buyQty:200, useQty:67,  unitPrice:203},
-  {id:14,name:'ブロッコリー', buyQty:375, useQty:40,  unitPrice:198},
-  {id:15,name:'鶏胸肉',       buyQty:1000,useQty:50,  unitPrice:1570},
-  {id:16,name:'ゆで卵',       buyQty:10,  useQty:1,   unitPrice:315},
-  {id:17,name:'無塩ナッツ',   buyQty:70,  useQty:5,   unitPrice:360},
+  {id:1, name:'レタス',       buyQty:400, useQty:40,  unitPrice:238,  unit:'g'},
+  {id:2, name:'サニーレタス', buyQty:160, useQty:40,  unitPrice:138,  unit:'g'},
+  {id:3, name:'さつまいも',   buyQty:250, useQty:30,  unitPrice:198,  unit:'g'},
+  {id:4, name:'にんじん',     buyQty:400, useQty:15,  unitPrice:68,   unit:'g'},
+  {id:5, name:'アボカド',     buyQty:120, useQty:30,  unitPrice:198,  unit:'g'},
+  {id:6, name:'かぼちゃ',     buyQty:380, useQty:30,  unitPrice:168,  unit:'g'},
+  {id:7, name:'ズッキーニ',   buyQty:90,  useQty:20,  unitPrice:198,  unit:'g'},
+  {id:8, name:'きゅうり',     buyQty:90,  useQty:15,  unitPrice:68,   unit:'g'},
+  {id:9, name:'プチトマト',   buyQty:230, useQty:35,  unitPrice:198,  unit:'g'},
+  {id:10,name:'オクラ',       buyQty:40,  useQty:15,  unitPrice:180,  unit:'g'},
+  {id:11,name:'豆苗',         buyQty:100, useQty:25,  unitPrice:118,  unit:'g'},
+  {id:12,name:'えび',         buyQty:200, useQty:40,  unitPrice:458,  unit:'g'},
+  {id:13,name:'鮭',           buyQty:200, useQty:67,  unitPrice:203,  unit:'g'},
+  {id:14,name:'ブロッコリー', buyQty:375, useQty:40,  unitPrice:198,  unit:'g'},
+  {id:15,name:'鶏胸肉',       buyQty:1000,useQty:50,  unitPrice:1570, unit:'g'},
+  {id:16,name:'ゆで卵',       buyQty:10,  useQty:1,   unitPrice:315,  unit:'個'},
+  {id:17,name:'無塩ナッツ',   buyQty:70,  useQty:5,   unitPrice:360,  unit:'g'},
 ];
 let ingredientMaster = [];
 
@@ -895,9 +896,11 @@ function getMasterNextId(){ return Math.max(0,...ingredientMaster.map(m=>m.id))+
 function renderMasterList(){
   const list = document.getElementById('master-list');
   if(!list) return;
+  const unitOpts = ['g','kg','個','本','枚','ml','L','パック','袋'].map(u=>`<option value="${u}">${u}</option>`).join('');
   list.innerHTML = ingredientMaster.map(m=>`
-    <div style="display:grid;grid-template-columns:130px 64px 60px 60px 24px;gap:4px;align-items:center;min-width:320px;" data-mid="${m.id}">
+    <div style="display:grid;grid-template-columns:160px 50px 58px 58px 58px 24px;gap:4px;align-items:center;min-width:420px;" data-mid="${m.id}">
       <input class="ing-inp" type="text" value="${m.name}" onchange="updateMaster(${m.id},'name',this.value)" style="font-size:10px;">
+      <select class="ing-inp" onchange="updateMaster(${m.id},'unit',this.value)" style="font-size:10px;padding:4px 2px;">${unitOpts.replace(\`value="\${m.unit||'g'}"\`,\`value="\${m.unit||'g'}" selected\`)}</select>
       <input class="ing-inp" type="number" value="${m.buyQty}" onchange="updateMaster(${m.id},'buyQty',+this.value)" style="text-align:right;font-size:10px;">
       <input class="ing-inp" type="number" value="${m.useQty}" onchange="updateMaster(${m.id},'useQty',+this.value)" style="text-align:right;font-size:10px;">
       <input class="ing-inp" type="number" value="${m.unitPrice}" onchange="updateMaster(${m.id},'unitPrice',+this.value)" style="text-align:right;font-size:10px;">
@@ -916,7 +919,7 @@ function deleteMaster(id){
 }
 
 function addMasterRow(){
-  ingredientMaster.push({id:getMasterNextId(), name:'新しい食材', buyQty:100, useQty:20, unitPrice:100});
+  ingredientMaster.push({id:getMasterNextId(), name:'新しい食材', buyQty:100, useQty:20, unitPrice:100, unit:'g'});
   saveMaster(); renderMasterList(); renderCheckList();
 }
 
@@ -937,7 +940,7 @@ function renderCheckList(){
     <label style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <input type="checkbox" class="ing-check" data-id="${m.id}" onchange="updateFoodPreview()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--green);">
       <span style="flex:1;font-size:11px;color:var(--ink2);">${m.name}</span>
-      <span style="font-size:9px;color:var(--ink3);">${m.useQty}g</span>
+      <span style="font-size:9px;color:var(--ink3);">${m.useQty}${m.unit||'g'}</span>
       <span style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--amber);min-width:40px;text-align:right;">${fmtY(cost)}</span>
     </label>`;
   }).join('');
@@ -958,7 +961,7 @@ function updateFoodPreview(){
   document.getElementById('preview-price').textContent = fmtY(price);
   document.getElementById('preview-target').textContent = getTarget();
   document.getElementById('preview-items').textContent =
-    selected.map(m=>`${m.name} ${m.useQty}g → ${fmtY(masterCostPer(m))}`).join(' ／ ');
+    selected.map(m=>`${m.name} ${m.useQty}${m.unit||'g'} → ${fmtY(masterCostPer(m))}`).join(' ／ ');
 }
 
 function addIngRow(){} // 後方互換のため残す
@@ -1708,7 +1711,7 @@ function renderPdfPreview(items){
     <label style="display:grid;grid-template-columns:16px 1fr 56px 56px;gap:6px;align-items:center;padding:4px 6px;border-radius:5px;background:var(--bg3);cursor:pointer;font-size:10px;">
       <input type="checkbox" checked data-idx="${i}" style="width:12px;height:12px;accent-color:var(--green);">
       <span style="color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.name}">${item.name}</span>
-      <span style="color:var(--ink3);text-align:right;">${item.buyQty}g</span>
+      <span style="color:var(--ink3);text-align:right;">${item.buyQty}${item.unit||'g'}</span>
       <span style="color:var(--amber);text-align:right;">¥${item.unitPrice}</span>
     </label>`).join('');
   document.getElementById('pdf-preview')._items = items;
@@ -1730,7 +1733,8 @@ function importCheckedItems(){
         name: item.name,
         buyQty: buyQty,
         useQty: Math.round(buyQty / 10),
-        unitPrice: Math.round(item.unitPrice) || 0
+        unitPrice: Math.round(item.unitPrice) || 0,
+        unit: item.unit || 'g'
       });
       count++;
     }
